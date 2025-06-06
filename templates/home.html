@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Inicio | WindFlow{% endblock %}
+
+{% block content %}
+<!-- HERO SECTION -->
+  <section class="relative h-[95vh] overflow-hidden flex items-center justify-center text-center">
+    <!-- Gradiente oscuro sobre la imagen -->
+    <div class="absolute inset-0 bg-gradient-to-r from-color1/80 to-color2/60"></div>
+
+    <!-- Imagen izquierda con animación -->
+    <img src="{% static 'viento_fondo_tr.png' %}" alt="onda izquierda"
+        class="absolute left-0 bottom-0 w-1/3 opacity-80 pointer-events-none z-0 animate-slideInLeft">
+
+    <!-- Imagen derecha con animación -->
+    <img src="{% static 'viento_fondo_tr_2.png' %}" alt="onda derecha"
+        class="absolute right-0 top-0 w-1/3 opacity-80 pointer-events-none z-0 animate-slideInRight">
+
+    <!-- Contenido centrado -->
+    <div class="relative z-10 text-white animate-fadeIn max-w-3xl px-6">
+      {% if not user.is_authenticated %}
+        <h1 class="text-5xl font-extrabold mb-4 drop-shadow-xl">
+          Bienvenido a <span class="text-color3">WindFlow</span>
+        </h1>
+        <p class="text-xl mb-6 drop-shadow">
+          Tu espacio para gestionar tareas, notas y concentrarte con Pomodoro.
+        </p>
+        <div class="flex justify-center gap-4 flex-wrap">
+          <a href="{% url 'guest_mode' %}" class="bg-color2 text-white py-3 px-6 rounded-xl shadow-lg hover:bg-color3 transition">
+            Entrar como Invitado
+          </a>
+          <a href="{% url 'login' %}" class="bg-color1 text-white py-3 px-6 rounded-xl shadow-lg hover:bg-color3 transition">
+            Iniciar sesión
+          </a>
+          <a href="{% url 'register' %}" class="border-2 border-white text-white py-3 px-6 rounded-xl hover:bg-white hover:text-color1 transition">
+            Crear cuenta
+          </a>
+        </div>
+      {% else %}
+        <h1 class="text-4xl font-bold text-white mb-4 drop-shadow">Hola {{ user.username }} 👋</h1>
+        <p class="text-xl drop-shadow">
+          {% if user.profile.es_admin_publico %}
+            ¡Accede al panel para gestionar tus grupos y usuarios!
+          {% else %}
+            ¡Comienza a usar WindFlow y mejora tu productividad!
+          {% endif %}
+        </p>
+        <div class="flex justify-center gap-4 flex-wrap" style="margin-top: 20px;">
+          <a href="{% url 'dashboard' %}" class="bg-color1 text-white py-3 px-6 rounded-xl shadow-lg hover:bg-color3 transition">
+              Panel de Control
+          </a>
+        </div>
+      {% endif %}
+    </div>
+  </section>
+
+
+<!-- ABOUT SECTION -->
+  <section class="max-w-6xl mx-auto px-6 py-20 text-center" data-aos="fade-up">
+    <h2 class="text-3xl font-bold text-color1 mb-6">¿Qué es WindFlow?</h2>
+    <p class="text-lg text-gray-700 leading-relaxed mb-8">
+      WindFlow es tu asistente digital para aumentar la productividad. Administra tus tareas, tus notas y accede a modos de enfoque con técnicas Pomodoro. Diseñado para adaptarse a ti, desde usuarios casuales hasta profesionales suscritos o administradores.
+    </p>
+    <img src="{% static 'portada.png' %}" class="rounded-xl shadow-xl mx-auto max-w-3xl" data-aos="zoom-in">
+  </section>
+
+
+
+<!-- DIFERENCIAS DE ROLES -->
+  <section class="bg-white py-20" data-aos="fade-up">
+    <div class="max-w-7xl mx-auto px-6">
+      <h2 class="text-3xl font-bold text-color1 text-center mb-12" data-aos="fade-up" data-aos-delay="100">
+        Comparativa de Roles en WindFlow
+      </h2>
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        
+        <div class="bg-color4 p-6 rounded-xl shadow text-center" data-aos="zoom-in" data-aos-delay="200">
+          <h3 class="text-xl font-bold text-color1 mb-2">Invitado</h3>
+          <ul class="text-left list-disc list-inside text-sm text-gray-700">
+            <li>Notas (no guardadas)</li>
+            <li>3 Modos Pomodoro</li>
+          </ul>
+        </div>
+
+        <div class="bg-white p-6 rounded-xl shadow text-center border border-color2" data-aos="zoom-in" data-aos-delay="300">
+          <h3 class="text-xl font-bold text-color2 mb-2">Usuario Gratuito</h3>
+          <ul class="text-left list-disc list-inside text-sm text-gray-700">
+            <li>Notas ilimitadas</li>
+            <li>Tareas ilimitadas</li>
+            <li>3 Modos Pomodoro</li>
+            <li>Winds ilimitados</li>
+          </ul>
+        </div>
+
+        <div class="bg-color2 p-6 rounded-xl shadow text-white text-center" data-aos="zoom-in" data-aos-delay="400">
+          <h3 class="text-xl font-bold mb-2">Usuario Suscrito</h3>
+          <ul class="text-left list-disc list-inside text-sm">
+            <li>Notas y Tareas ilimitadas</li>
+            <li>3 Modos Pomodoro</li>
+            <li>Winds ilimitados</li>
+            <li>Ver Estadísticas</li>
+            <li>Ver Historial Pomodoro</li>
+            <li>Exportar PDF</li>
+          </ul>
+        </div>
+
+        <div class="bg-color1 p-6 rounded-xl shadow text-white text-center" data-aos="zoom-in" data-aos-delay="500">
+          <h3 class="text-xl font-bold mb-2">Administrador</h3>
+          <ul class="text-left list-disc list-inside text-sm">
+            <li>Gestión de usuarios y grupos</li>
+            <li>Creación de winds para usuarios</li>
+            <li>Estadísticas por usuario</li>
+            <li>Exportar PDF</li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+{% endblock %}
+
+{% block extra_script %}
+    <!-- Scripts -->
+    <script>
+    tailwind.config = {
+      theme: {
+      extend: {
+        colors: {
+        color1: '#2E5077',
+        color2: '#4DA1A9',
+        color3: '#79D7BE',
+        color4: '#F6F4F0',
+        color5: '#3E6C93'
+      },
+        animation: {
+          fadeIn: 'fadeIn 2s ease-in-out',
+          slideInLeft: 'slideInLeft 1.5s ease-out',
+          slideInRight: 'slideInRight 1.5s ease-out',
+          fadeUp: 'fadeUp 1.5s ease-out', 
+        },
+        keyframes: {
+        fadeIn: {
+          '0%': { opacity: 0 },
+          '100%': { opacity: 1 },
+        },
+        slideInLeft: {
+          '0%': { transform: 'translateX(-100%)', opacity: 0 },
+          '100%': { transform: 'translateX(0)', opacity: 1 },
+        },
+        slideInRight: {
+          '0%': { transform: 'translateX(100%)', opacity: 0 },
+          '100%': { transform: 'translateX(0)', opacity: 1 },
+        },
+        fadeUp: {
+          '0%': {
+          opacity: 0,
+          transform: 'translateY(40px)'
+          },
+          '100%': {
+          opacity: 1,
+          transform: 'translateY(0)'
+          }
+        }
+        }
+      }
+      }
+    }
+    </script>
+  {% endblock %}

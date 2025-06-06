@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ wind.titulo }} - WindFlow{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-10 animate-fadeIn">
+
+  <!-- Volver -->
+  <a href="{% url 'user_winds' %}" class="inline-block mb-6 text-sm text-color2 hover:underline">← Volver a Winds</a>
+
+  <!-- Título del Wind -->
+  <div class="mb-6">
+    <h2 class="text-3xl font-bold text-color1 mb-2">🌪️ {{ wind.titulo }}</h2>
+    <p class="text-gray-600">{{ wind.descripcion }}</p>
+  </div>
+
+  <!-- Secciones de Tareas y Notas -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    <!-- Tareas -->
+    <div class="bg-white rounded-xl shadow-md border border-gray-100">
+      <div class="bg-color1 text-white text-sm font-semibold px-5 py-3 rounded-t-xl">✅ Tareas del Wind</div>
+      <ul class="divide-y divide-gray-200">
+        {% for tarea in wind.tareas.all %}
+          <li class="flex justify-between items-center px-5 py-3 text-sm">
+            <div class="flex items-center">
+              <input type="checkbox"
+                     class="mr-3 w-5 h-5 text-color2 border-gray-300 rounded"
+                     data-tarea-id="{{ tarea.id }}"
+                     onchange="actualizarTarea(this)"
+                     {% if tarea.completada %}checked{% endif %}>
+              <span>{{ tarea.titulo }}</span>
+            </div>
+            <span id="estado-tarea-{{ tarea.id }}"
+                  class="px-2 py-1 text-xs rounded font-medium
+                         {% if tarea.completada %}bg-emerald-100 text-emerald-600
+                         {% else %}bg-gray-200 text-gray-600{% endif %}">
+              {% if tarea.completada %}Completa{% else %}Pendiente{% endif %}
+            </span>
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Notas -->
+    <div class="bg-white rounded-xl shadow-md border border-gray-100">
+      <div class="bg-emerald-600 text-white text-sm font-semibold px-5 py-3 rounded-t-xl">📝 Notas del Wind</div>
+      <ul class="divide-y divide-gray-200 text-sm">
+        {% for nota in wind.notas.all %}
+          <li class="px-5 py-3 break-words">{{ nota.contenido }}</li>
+        {% empty %}
+          <li class="px-5 py-3 text-gray-400 italic">Sin notas asociadas.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- Pomodoro asociado -->
+  <div class="mt-10 text-center">
+    {% if wind.pomodoro %}
+      <h4 class="text-xl font-semibold text-color1 mb-2">⏰ Pomodoro asociado: {{ wind.pomodoro.nombre }}</h4>
+      <p class="text-sm text-gray-600 mb-4">
+        Foco: {{ wind.pomodoro.foco_min }} min |
+        Descanso corto: {{ wind.pomodoro.descanso_corto_min }} min |
+        Descanso largo: {{ wind.pomodoro.descanso_largo_min }} min |
+        Ciclos: {{ wind.pomodoro.ciclos }}
+      </p>
+      <a href="{% url 'user_pomodoro' %}?config={{ wind.pomodoro.id }}&wind={{ wind.id }}"
+         class="inline-block px-5 py-2 border border-color2 text-color2 rounded hover:bg-color2 hover:text-white transition text-sm">
+        Iniciar este Pomodoro
+      </a>
+    {% else %}
+      <p class="text-sm text-gray-400">No hay Pomodoro asignado a este Wind.</p>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+  function actualizarTarea(checkbox) {
+    const tareaId = checkbox.dataset.tareaId;
+    const estado = checkbox.checked;
+
+    fetch("{% url 'actualizar_estado_tarea' %}", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        "X-CSRFToken": getCookie("csrftoken")
+      },
+      body: `tarea_id=${tareaId}&completada=${estado}`
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.ok) {
+        const badge = document.getElementById(`estado-tarea-${tareaId}`);
+        badge.className = "px-2 py-1 text-xs rounded font-medium " + (estado
+          ? "bg-emerald-100 text-emerald-600"
+          : "bg-gray-200 text-gray-600");
+        badge.textContent = estado ? "Completa" : "Pendiente";
+      } else {
+        alert("❌ No se pudo actualizar la tarea");
+        checkbox.checked = !estado;
+      }
+    });
+  }
+
+  function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+      const cookies = document.cookie.split(';');
+      for (let cookie of cookies) {
+        const trimmed = cookie.trim();
+        if (trimmed.startsWith(name + '=')) {
+          cookieValue = decodeURIComponent(trimmed.slice(name.length + 1));
+          break;
+        }
+      }
+    }
+    return cookieValue;
+  }
+</script>
+{% endblock %}

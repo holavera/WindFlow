@@ -1,0 +1,422 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detalle Grupo | WindFlow{% endblock %}
+
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    /* Fondo general del body */
+    body {
+      background-color: #bebbbb; /* gris oscuro suave */
+      color: #e0e0e0;            /* texto principal gris claro */
+    }
+
+    /* NAV y FOOTER en negro puro */
+    nav, footer {
+      background-color: #0f0f0f !important;
+      border-bottom: 1px solid #333;
+      color: #e0e0e0;
+    }
+
+    nav a:hover {
+      color: #c0c0c0 !important;
+    }
+
+    input, select, textarea {
+      border: 2px solid #CBD5E0; /* gris claro */
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+      background-color: #F9FAFB; /* fondo suave */
+      transition: all 0.3s ease;
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: #A0AEC0; /* gris placeholder */
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<section class="max-w-6xl mx-auto px-4 py-10">
+  <div class="mb-6">
+    <a href="{% url 'gestion_grupos' %}" class="inline-block px-4 py-2 bg-gray-200 text-gray-800 rounded-full hover:bg-gray-300 transition">
+      ← Volver a Grupos
+    </a>
+  </div>
+
+  <h2 class="text-2xl font-bold text-color1 mb-2">Grupo: {{ grupo.nombre }}</h2>
+  <p class="text-gray-600 mb-6">{{ grupo.descripcion }}</p>
+
+  <h3 class="text-lg font-semibold text-gray-700 mb-3">👤 Usuarios del grupo:</h3>
+  {% if grupo.usuarios.all %}
+    <ul class="divide-y divide-gray-200 mb-6">
+      {% for usuario in grupo.usuarios.all %}
+        <li class="flex justify-between items-center py-3">
+          <span>{{ usuario.user.username }} ({{ usuario.user.email }})</span>
+          <form method="post" action="{% url 'eliminar_usuario_grupo' grupo.id usuario.id %}">
+            {% csrf_token %}
+            <button class="text-red-600 hover:underline text-sm" type="submit">🖚 Eliminar</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="text-gray-500 mb-6">No hay usuarios aún en este grupo.</p>
+  {% endif %}
+
+  <h4 class="text-base font-semibold text-gray-700 mb-2">➕ Añadir usuario por nombre o email:</h4>
+  <form method="post" class="mb-10">
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="mt-2 px-5 py-2 bg-color1 text-white rounded-full hover:bg-color2 transition">
+      Añadir al grupo
+    </button>
+  </form>
+
+  <div class="bg-white border border-gray-200 rounded-xl shadow p-6 mb-10">
+    <h4 class="text-lg font-bold text-gray-800 mb-4">🌪️ Crear wind para usuarios del grupo</h4>
+
+    <div id="bloqueBotonesWind" class="mb-4">
+      <button type="button" class="px-4 py-2 bg-color1 text-white rounded hover:bg-color2 transition" onclick="mostrarFormularioWind()">Crear wind</button>
+    </div>
+
+    <form method="post" action="{% url 'crear_wind_grupo' grupo.id %}" id="formularioWind" style="display:none;" class="space-y-5">
+      {% csrf_token %}
+
+      <div>
+        {{ form_wind.titulo.label_tag }} {{ form_wind.titulo }}
+      </div>
+      <div>
+        {{ form_wind.descripcion.label_tag }} {{ form_wind.descripcion }}
+      </div>
+
+      <div class="flex gap-3">
+        <button type="button" class="btn btn-outline-primary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNuevaTarea">➕ Nueva tarea</button>
+        <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalNuevaNota">➕ Nueva nota</button>
+      </div>
+
+      <div id="lista-tareas-creadas">
+        <strong>Tareas recién añadidas:</strong>
+        <ul id="listaTareas" class="list-disc list-inside mt-2 text-sm text-gray-700"></ul>
+      </div>
+
+      <div id="lista-notas-creadas">
+        <strong>Notas recién añadidas:</strong>
+        <ul id="listaNotas" class="list-disc list-inside mt-2 text-sm text-gray-700"></ul>
+      </div>
+
+      <input type="hidden" name="tareas_ids" id="tareas_ids">
+      <input type="hidden" name="notas_ids" id="notas_ids">
+
+      <div>
+        {{ form_wind.usuarios.label_tag }}
+        <small class="text-gray-500 block mb-1">Selecciona a qué usuarios se aplicará este wind.</small>
+        {{ form_wind.usuarios }}
+        <button type="button" class="text-sm text-blue-600 hover:underline mt-2" onclick="seleccionarTodosUsuarios()">Seleccionar todos</button>
+      </div>
+
+      <div>
+        {{ form_wind.pomodoro.label_tag }}
+        <small class="text-gray-500 block mb-1">Escoge una configuración Pomodoro.</small>
+        {{ form_wind.pomodoro }}
+        {% if form_wind.pomodoro.errors %}
+          <div class="text-red-500 text-sm mt-1">{{ form_wind.pomodoro.errors }}</div>
+        {% endif %}
+      </div>
+
+      <div class="flex items-center gap-2">
+        {{ form_wind.focus_mode }}
+        {{ form_wind.focus_mode.label_tag }}
+        <small class="text-gray-500">Activa el modo Focus para concentración sin distracciones.</small>
+      </div>
+
+      <div class="flex gap-3 mt-4">
+        <button type="submit" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 transition">✅ Crear wind</button>
+        <button type="button" class="px-4 py-2 border border-red-500 text-red-600 rounded hover:bg-red-50 transition" onclick="cancelarFormularioWind()">❌ Cancelar</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="text-end">
+    <a href="{% url 'eliminar_grupo' grupo.id %}" class="text-red-600 hover:underline">🖚 Eliminar grupo</a>
+  </div>
+</section>
+
+<!-- Modal para crear tarea -->
+<div class="modal fade" id="modalNuevaTarea" tabindex="-1" aria-labelledby="modalNuevaTareaLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="formNuevaTarea" method="post">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalNuevaTareaLabel">➕ Crear nueva tarea</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body" id="contenido-modal-tarea">
+          <div class="text-center text-muted">Cargando formulario...</div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Guardar tarea</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal para crear nota -->
+<div class="modal fade" id="modalNuevaNota" tabindex="-1" aria-labelledby="modalNuevaNotaLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="formNuevaNota" method="post">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalNuevaNotaLabel">➕ Crear nueva nota</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body" id="contenido-modal-nota">
+          <div class="text-center text-muted">Cargando formulario...</div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Guardar nota</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal genérico para editar contenido -->
+<div class="modal fade" id="modalEditarElemento" tabindex="-1" aria-labelledby="modalEditarElementoLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <form id="formEditarElemento" method="post">
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalEditarElementoLabel">Editar</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" id="editarElementoId">
+          <input type="hidden" id="editarElementoTipo">
+          <div class="mb-3">
+            <label for="editarElementoContenido" class="form-label">Nuevo contenido</label>
+            <textarea id="editarElementoContenido" class="form-control" rows="3"></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="submit" class="btn btn-primary">Guardar</button>
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+
+{% block extra_script %}
+
+  <!-- JS y CSS de Select2 desde CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+  <script>
+    $(document).ready(function() {
+       $('#id_usuarios').select2({
+         width: '100%',
+         placeholder: "Selecciona usuarios del grupo",
+         allowClear: true
+       });
+     });
+  </script>
+
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+  $(document).ready(function () {
+    // Mostrar/Ocultar formulario principal
+    window.mostrarFormularioWind = function () {
+      $('#formularioWind').show();
+      $('#bloqueBotonesWind').hide();
+    };
+
+    window.cancelarFormularioWind = function () {
+      $('#formularioWind').hide();
+      $('#bloqueBotonesWind').show();
+    };
+
+    // Select2 para usuarios
+    $('#id_usuarios').select2({
+      width: '100%',
+      placeholder: "Selecciona usuarios del grupo",
+      allowClear: true
+    });
+
+    // -------------------- TAREAS --------------------
+    $('#modalNuevaTarea').on('show.bs.modal', function () {
+      $.get("{% url 'tarea_ajax_form' %}", function (data) {
+        $('#contenido-modal-tarea').html(data.form_html);
+      });
+    });
+
+    $(document).on('submit', '#formNuevaTarea', function (e) {
+      e.preventDefault();
+      $.post("{% url 'tarea_ajax_form' %}", $(this).serialize(), function (data) {
+        if (data.success) {
+          añadirTareaALista(data.id, data.titulo);
+          $('#modalNuevaTarea').modal('hide');
+        } else {
+          $('#contenido-modal-tarea').html(data.form_html);
+        }
+      });
+    });
+
+    function añadirTareaALista(id, titulo) {
+      // Añadir visual
+      const html = `
+        <li class="list-group-item d-flex justify-content-between align-items-center" data-id="${id}">
+          <span class="tarea-text">${titulo}</span>
+          <div>
+            <button type="button" class="btn btn-sm btn-outline-warning me-2" onclick="editarElemento('${id}', 'tarea')">✏️</button>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarTarea('${id}')">🗑️</button>
+          </div>
+        </li>
+      `;
+      $('#listaTareas').append(html);
+
+      // Añadir al input oculto
+      const input = $('#tareas_ids');
+      let current = input.val().split(',').filter(Boolean);
+      current.push(id);
+      input.val(current.join(','));
+    }
+
+
+    window.eliminarTarea = function (id) {
+      if (!confirm("¿Seguro que quieres eliminar esta tarea?")) return;
+      $.post("{% url 'eliminar_tarea_ajax' %}", {
+        id: id,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+      }, function (data) {
+        if (data.success) {
+          $(`#id_tareas option[value="${id}"]`).remove();
+          $(`#listaTareas li[data-id="${id}"]`).remove();
+        } else {
+          alert("Error: " + data.error);
+        }
+      });
+    };
+
+    // -------------------- NOTAS --------------------
+    $('#modalNuevaNota').on('show.bs.modal', function () {
+      $.get("{% url 'nota_ajax_form' %}", function (data) {
+        $('#contenido-modal-nota').html(data.form_html);
+      });
+    });
+
+    $(document).on('submit', '#formNuevaNota', function (e) {
+      e.preventDefault();
+      $.post("{% url 'nota_ajax_form' %}", $(this).serialize(), function (data) {
+        if (data.success) {
+          añadirNotaALista(data.id, data.contenido);
+          $('#modalNuevaNota').modal('hide');
+        } else {
+          $('#contenido-modal-nota').html(data.form_html);
+        }
+      });
+    });
+
+    function añadirNotaALista(id, contenido) {
+      const html = `
+        <li class="list-group-item d-flex justify-content-between align-items-center" data-id="${id}">
+          <span class="nota-text">${contenido}</span>
+          <div>
+            <button type="button" class="btn btn-sm btn-outline-warning me-2" onclick="editarElemento('${id}', 'nota')">✏️</button>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarNota('${id}')">🗑️</button>
+          </div>
+        </li>
+      `;
+      $('#listaNotas').append(html);
+
+      const input = $('#notas_ids');
+      let current = input.val().split(',').filter(Boolean);
+      current.push(id);
+      input.val(current.join(','));
+    }
+
+
+
+    window.eliminarNota = function (id) {
+      if (!confirm("¿Seguro que quieres eliminar esta nota?")) return;
+      $.post("{% url 'eliminar_nota_ajax' %}", {
+        id: id,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+      }, function (data) {
+        if (data.success) {
+          $(`#id_notas option[value="${id}"]`).remove();
+          $(`#listaNotas li[data-id="${id}"]`).remove();
+        } else {
+          alert("Error: " + data.error);
+        }
+      });
+    };
+
+    // -------------------- MODAL EDICIÓN --------------------
+    $('#formEditarElemento').on('submit', function(e) {
+      e.preventDefault();
+      const id = $('#editarElementoId').val();
+      const tipo = $('#editarElementoTipo').val();
+      const nuevo = $('#editarElementoContenido').val().trim();
+
+      if (!nuevo) {
+        alert("El contenido no puede estar vacío.");
+        return;
+      }
+
+      const url = tipo === 'tarea' ? "{% url 'editar_tarea_ajax' %}" : "{% url 'editar_nota_ajax' %}";
+      const campo = tipo === 'tarea' ? 'titulo' : 'contenido';
+
+      const payload = {
+        id: id,
+        csrfmiddlewaretoken: '{{ csrf_token }}'
+      };
+      payload[campo] = nuevo;
+
+      $.post(url, payload, function(data) {
+        if (data.success) {
+          const spanSelector = tipo === 'tarea' ? '.tarea-text' : '.nota-text';
+          $(`[data-id="${id}"] ${spanSelector}`).text(data[campo]);
+          $(`#id_${tipo === 'tarea' ? 'tareas' : 'notas'} option[value="${id}"]`).text(data[campo]);
+          $('#modalEditarElemento').modal('hide');
+        } else {
+          alert("Error: " + data.error);
+        }
+      });
+    });
+
+    window.editarElemento = function(id, tipo) {
+      const selector = tipo === 'tarea' ? '.tarea-text' : '.nota-text';
+      const contenido = $(`[data-id="${id}"] ${selector}`).text();
+      $('#editarElementoId').val(id);
+      $('#editarElementoTipo').val(tipo);
+      $('#editarElementoContenido').val(contenido);
+      $('#modalEditarElemento').modal('show');
+    };
+  });
+
+    function seleccionarTodosUsuarios() {
+      const usuarios = $('#id_usuarios option');
+      usuarios.prop('selected', true);
+      $('#id_usuarios').trigger('change'); // Para que Select2 lo actualice visualmente
+    }
+
+
+    // Desactiva manualmente la opción vacía
+    $('#id_pomodoro option[value=""]').prop('disabled', true);
+
+  </script>
+
+  
+{% endblock %}

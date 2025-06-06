@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Crear Grupo | WindFlow{% endblock %}
+
+{% block extra_head %}
+  <style>
+    /* Fondo general del body */
+    body {
+      background-color: #bebbbb; /* gris oscuro suave */
+      color: #e0e0e0;            /* texto principal gris claro */
+    }
+
+    /* NAV y FOOTER en negro puro */
+    nav, footer {
+      background-color: #0f0f0f !important;
+      border-bottom: 1px solid #333;
+      color: #e0e0e0;
+    }
+
+    nav a:hover {
+      color: #c0c0c0 !important;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 2px solid #CBD5E0; /* gris claro */
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+      background-color: #F9FAFB; /* fondo suave */
+      transition: all 0.3s ease;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #4DA1A9; /* tu color2 */
+      box-shadow: 0 0 0 3px rgba(77, 161, 169, 0.3);
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: #A0AEC0; /* gris placeholder */
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<section class="max-w-xl mx-auto px-4 py-12">
+  <!-- Volver -->
+  <div class="mb-6">
+    <a href="{% url 'gestion_grupos' %}"
+       class="inline-block px-4 py-2 bg-gray-200 text-gray-800 rounded-full hover:bg-gray-300 transition">
+      ← Volver a Grupos
+    </a>
+  </div>
+
+  <!-- Título -->
+  <h2 class="text-2xl font-bold text-gray-800 mb-6">➕ Crear nuevo grupo</h2>
+
+  <!-- Formulario -->
+  <form method="post" class="bg-white border border-gray-200 rounded-xl shadow p-6 space-y-6">
+    {% csrf_token %}
+
+    <div>
+      {{ form.nombre.label_tag }}
+      <div class="mt-1">
+        {{ form.nombre }}
+      </div>
+      {% if form.nombre.errors %}
+        <p class="text-red-500 text-sm mt-1">{{ form.nombre.errors }}</p>
+      {% endif %}
+    </div>
+
+    <div>
+      {{ form.descripcion.label_tag }}
+      <div class="mt-1">
+        {{ form.descripcion }}
+      </div>
+      {% if form.descripcion.errors %}
+        <p class="text-red-500 text-sm mt-1">{{ form.descripcion.errors }}</p>
+      {% endif %}
+    </div>
+
+    <div class="pt-4">
+      <button type="submit"
+              class="px-5 py-2 bg-color1 text-white rounded-full hover:bg-color2 transition shadow">
+        Crear grupo
+      </button>
+    </div>
+  </form>
+</section>
+{% endblock %}

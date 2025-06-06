@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Historial Pomodoro - WindFlow{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-10 animate-fadeIn">
+
+  <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+    <h2 class="text-2xl font-bold text-color1 text-center md:text-left">📊 Historial de {{ usuario }}</h2>
+    <a href="{% url 'estadisticas_grupo' grupo.id %}" class="inline-block px-4 py-2 border border-gray-400 text-gray-600 hover:bg-gray-200 rounded transition">
+      ← Volver
+    </a>
+  </div>
+
+  <!--
+  <div class="flex justify-center mb-6">
+    <div class="flex gap-2">
+      <a href="?filtro=hoy" class="px-4 py-2 rounded border border-color2 text-color2" data-filtro="hoy">Hoy</a>
+      <a href="?filtro=semana" class="px-4 py-2 rounded border border-color2 text-color2" data-filtro="semana">Esta semana</a>
+      <a href="?filtro=todo" class="px-4 py-2 rounded border border-color2 text-color2" data-filtro="todo">Todo</a>
+
+    </div>
+  </div>
+  -->
+
+  <div class="overflow-auto shadow rounded-lg">
+    <table class="min-w-full bg-white divide-y divide-gray-200 text-sm text-left">
+      <thead class="bg-color1 text-white">
+        <tr>
+          <th class="px-4 py-2">📅 Fecha</th>
+          <th class="px-4 py-2">🎯 Tipo</th>
+          <th class="px-4 py-2">⏱ Duración (min)</th>
+          <th class="px-4 py-2">📛 Pomodoro</th>
+          <th class="px-4 py-2">🧠 Wind</th>
+        </tr>
+      </thead>
+      <tbody class="divide-y divide-gray-100">
+        {% for sesion in sesiones %}
+          <tr class="hover:bg-gray-50">
+            <td class="px-4 py-2">{{ sesion.inicio|date:"d/m/Y H:i" }}</td>
+            <td class="px-4 py-2">
+              <span class="text-white text-xs px-2 py-1 rounded
+                {% if sesion.tipo == 'foco' %}
+                  bg-blue-600
+                {% elif sesion.tipo == 'descanso_corto' %}
+                  bg-emerald-500
+                {% else %}
+                  bg-purple-600
+                {% endif %}
+              ">
+                {{ sesion.get_tipo_display }}
+              </span>
+            </td>
+            <td class="px-4 py-2">
+              {% if sesion.fin %}
+                {{ sesion.tiempo_total|floatformat:1 }}
+              {% else %}
+                <span class="text-gray-400">-</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2">
+              {% if sesion.config_nombre %}
+                {{ sesion.config_nombre }}
+              {% else %}
+                <span class="text-gray-400">-</span>
+              {% endif %}
+            </td>
+            <td class="px-4 py-2">
+              {% if sesion.wind %}
+                {{ sesion.wind.titulo }}
+              {% else %}
+                <span class="text-gray-400">-</span>
+              {% endif %}
+            </td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="5" class="text-center text-gray-400 py-4">
+              No hay sesiones registradas en este período.
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
+

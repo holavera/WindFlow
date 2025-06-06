@@ -1,0 +1,13 @@
+{% csrf_token %}
+<div class="mb-3">
+  {{ form.titulo.label_tag }}
+  {{ form.titulo }}
+</div>
+<div class="mb-3">
+  {{ form.descripcion.label_tag }}
+  {{ form.descripcion }}
+</div>
+<div class="mb-3">
+  {{ form.fecha_limite.label_tag }}
+  {{ form.fecha_limite }}
+</div>

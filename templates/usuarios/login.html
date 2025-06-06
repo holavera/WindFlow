@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Iniciar sesión | WindFlow{% endblock %}
+
+{% block extra_head %}
+  <style>
+    input, select, textarea {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      border: 2px solid #CBD5E0; /* gris claro */
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+      background-color: #F9FAFB; /* fondo suave */
+      transition: all 0.3s ease;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #4DA1A9; /* tu color2 */
+      box-shadow: 0 0 0 3px rgba(77, 161, 169, 0.3);
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: #A0AEC0; /* gris placeholder */
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<section class="min-h-[80vh] flex items-center justify-center px-6 py-20 bg-color4" data-aos="fade-up">
+  <div class="bg-white p-10 rounded-xl shadow-xl w-full max-w-md">
+    <h2 class="text-3xl font-bold text-color1 text-center mb-6">Iniciar Sesión</h2>
+    <form method="post" class="space-y-4">
+      {% csrf_token %}
+      {{ form.as_p }}
+      <button type="submit" class="w-full bg-color2 text-white py-2 rounded-lg hover:bg-color3 transition">Entrar</button>
+    </form>
+    <p class="text-center text-sm text-gray-600 mt-6">
+      ¿No tienes cuenta?
+      <a href="{% url 'register' %}" class="text-color1 hover:underline">Regístrate aquí</a>
+    </p>
+  </div>
+</section>
+{% endblock %}
