@@ -1,0 +1,103 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Winds - WindFlow{% endblock %}
+
+{% block extra_head %}
+<style>
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  main {
+    flex: 1;
+  }
+
+  footer {
+    background-color: #2E5077; /* color1 */
+    color: white;
+    text-align: center;
+    padding: 1.5rem 1rem;
+    font-size: 0.875rem;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+</style>
+
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-10 animate-fadeIn">
+
+  <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+    <h2 class="text-3xl font-bold text-color1">🌬️ Mis Winds</h2>
+    <a href="{% url 'crear_wind' %}" class="px-5 py-2 bg-emerald-500 text-white rounded hover:bg-emerald-600 transition">➕ Crear nuevo Wind</a>
+  </div>
+
+  {% if winds %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {% for wind in winds %}
+        <div class="bg-white shadow-md rounded-xl p-5 border border-gray-100 flex flex-col justify-between h-full">
+          <div>
+            <h5 class="text-xl font-semibold text-color2 mb-2 break-words">{{ wind.titulo }}</h5>
+            <p class="text-gray-700 text-sm mb-3 break-words">{{ wind.descripcion|truncatechars:100 }}</p>
+
+            <p class="text-xs text-gray-500 mb-1">
+              📝 Notas: {{ wind.notas.count }} | ✅ Tareas: {{ wind.tareas.count }}
+            </p>
+            {% if wind.pomodoro %}
+              <p class="text-xs text-gray-500">⏰ Pomodoro: {{ wind.pomodoro.nombre }}</p>
+            {% endif %}
+          </div>
+          <div class="flex justify-end gap-2 mt-4">
+            <a href="{% url 'user_wind' wind.id %}" class="text-sm px-3 py-1 bg-color2 text-white rounded hover:bg-color3 transition">Ver</a>
+            <a href="{% url 'editar_wind' wind.id %}" class="text-sm px-3 py-1 border border-gray-400 text-gray-700 rounded hover:bg-gray-100 transition">Editar</a>
+            <button class="text-sm px-3 py-1 border border-red-500 text-red-500 rounded hover:bg-red-50 transition"
+                    onclick="confirmarEliminacion('{{ wind.id }}', '{{ wind.titulo }}')">Eliminar</button>
+          </div>
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-gray-500 mt-4">Aún no has creado ningún Wind.</p>
+  {% endif %}
+</div>
+
+<!-- Confirmación de eliminación -->
+<div id="confirmacionEliminar" class="fixed inset-0 bg-black/50 flex justify-center items-center hidden z-50">
+  <div class="bg-white p-6 rounded-xl shadow-lg w-full max-w-md">
+    <h5 class="text-lg font-bold mb-3">¿Estás seguro?</h5>
+    <p class="mb-5 text-sm text-gray-600">Vas a eliminar el Wind: <strong id="tituloWind"></strong></p>
+    <form id="formEliminar" method="post" class="flex justify-end gap-3">
+      {% csrf_token %}
+      <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700">Sí, eliminar</button>
+      <button type="button" class="px-4 py-2 border border-gray-300 text-gray-700 rounded hover:bg-gray-100"
+              onclick="ocultarConfirmacion()">Cancelar</button>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+  function confirmarEliminacion(windId, titulo) {
+    const form = document.getElementById('formEliminar');
+    const confirmDiv = document.getElementById('confirmacionEliminar');
+    const tituloSpan = document.getElementById('tituloWind');
+
+    form.action = `/winds/eliminar/${windId}/`;
+    tituloSpan.textContent = titulo;
+    confirmDiv.classList.remove('hidden');
+  }
+
+  function ocultarConfirmacion() {
+    document.getElementById('confirmacionEliminar').classList.add('hidden');
+  }
+</script>
+{% endblock %}

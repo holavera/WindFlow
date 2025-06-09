@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Notas del Usuario - WindFlow{% endblock %}
+
+{% block extra_head %}
+
+<style>
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  main {
+    flex: 1;
+  }
+
+  footer {
+    background-color: #2E5077; /* color1 */
+    color: white;
+    text-align: center;
+    padding: 1.5rem 1rem;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+</style>
+
+<style>
+  .nota-caja {
+    max-height: 220px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .nota-caja.fade::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 3rem;
+    background: linear-gradient(to top, white, transparent);
+    pointer-events: none;
+  }
+
+  .nota-expandida {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+</style>
+
+
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-10 animate-fadeIn">
+
+  <!-- Encabezado -->
+  <div class="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4 mb-8">
+    <h2 class="text-3xl font-bold text-color1">📝 Tus Notas</h2>
+    <div class="flex gap-2">
+      <a href="{% url 'dashboard' %}" class="px-4 py-2 border border-color2 text-color2 rounded hover:bg-color2 hover:text-white transition">← Panel</a>
+    </div>
+  </div>
+
+  <!-- Formulario -->
+  <form method="post" class="bg-white shadow-lg rounded-xl p-6 mb-10 border-l-4 border-color2">
+    {% csrf_token %}
+    <label for="contenido" class="block text-gray-700 font-semibold mb-2">Escribe tu nota</label>
+    <textarea name="contenido" id="contenido" rows="3" required
+              class="w-full p-3 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-color2"
+              placeholder="Contenido de la nota...">{{ request.POST.contenido }}</textarea>
+    <button type="submit" class="mt-4 px-6 py-2 bg-color2 text-white rounded font-semibold hover:bg-color3 transition">
+      Guardar nota
+    </button>
+  </form>
+
+  <!-- Lista de notas -->
+  {% if notas %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-auto">
+      {% for nota in notas %}
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex flex-col justify-between relative">
+
+        <!-- Botones arriba -->
+        {% if nota.id %}
+          <div class="absolute top-3 right-3 flex gap-2 z-10">
+            <a href="{% url 'editar_nota' nota.id %}" class="text-blue-500 hover:text-blue-700 text-lg" title="Editar">✏️</a>
+            <a href="{% url 'eliminar_nota' nota.id %}"
+              onclick="return confirm('¿Eliminar esta nota?');"
+              class="text-red-500 hover:text-red-700 text-lg" title="Eliminar">🗑️</a>
+          </div>
+        {% endif %}
+
+        <!-- Contenido de la nota -->
+        <div class="pt-8">
+          {% if nota.contenido|length > 300 %}
+            <div id="nota-{{ forloop.counter }}" class="nota-caja fade">
+              <p class="text-gray-800 whitespace-pre-line break-words pr-2">{{ nota.contenido }}</p>
+            </div>
+            <div class="mt-3 text-right">
+              <button type="button"
+                      class="text-sm text-color2 hover:underline font-medium"
+                      onclick='toggleNota({{ forloop.counter }})'
+                      id="btn-nota-{{ forloop.counter }}">
+                ⬇ Ver más
+              </button>
+            </div>
+          {% else %}
+            <p class="text-gray-800 whitespace-pre-line break-words pr-2">{{ nota.contenido }}</p>
+          {% endif %}
+        </div>
+
+        <!-- Fecha -->
+        <p class="mt-4 text-xs text-gray-400 text-right">{{ nota.fecha|date:"d/m/Y H:i" }}</p>
+      </div>
+
+
+      {% endfor %}
+    </div>
+  {% else %}
+    <p class="text-center text-gray-500 mt-8">Aún no has escrito ninguna nota.</p>
+  {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+  function toggleNota(id) {
+    const caja = document.getElementById("nota-" + id);
+    const btn = document.getElementById("btn-nota-" + id);
+
+    const expandida = caja.classList.toggle("nota-expandida");
+    caja.classList.toggle("nota-caja");
+    caja.classList.toggle("fade");
+
+    btn.innerText = expandida ? "⬆ Ver menos" : "⬇ Ver más";
+  }
+</script>
+
+
+{% endblock %}

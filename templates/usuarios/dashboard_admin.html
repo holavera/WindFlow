@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Panel de Administrador | WindFlow{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Fondo general del body */
+  body {
+    background-color: #bebbbb; /* gris oscuro suave */
+    color: #e0e0e0;            /* texto principal gris claro */
+  }
+
+  /* NAV y FOOTER en negro puro */
+  nav, footer {
+    background-color: #0f0f0f !important;
+    border-bottom: 1px solid #333;
+    color: #e0e0e0;
+  }
+
+  nav a:hover {
+    color: #c0c0c0 !important;
+  }
+
+  /* Paneles principales */
+  .bg-dark-panel {
+    background-color: #2a2a2a;
+  }
+
+  /* Tarjetas */
+  .card-dark {
+    background-color: #2f2f2f;
+    border: 1px solid #444;
+    box-shadow: 0 2px 10px rgba(255, 255, 255, 0.05);
+  }
+
+  /* Texto */
+  .text-silver {
+    color: #c0c0c0;
+  }
+
+  .text-light {
+    color: #e5e5e5;
+  }
+
+  .text-muted {
+    color: #aaaaaa;
+  }
+
+  /* Botones */
+  .btn-silver {
+    background-color: #c0c0c0;
+    color: #121212;
+    font-weight: 600;
+  }
+
+  .btn-silver:hover {
+    background-color: #e0e0e0;
+    color: #000;
+    box-shadow: 0 0 10px rgba(255,255,255,0.15);
+  }
+
+  /* Efectos y extras */
+  .rounded-metal {
+    background: linear-gradient(145deg, #2b2b2b, #1f1f1f);
+    border: 1px solid #3a3a3a;
+    color: #e0e0e0;
+  }
+
+  .hover-glow:hover {
+    box-shadow: 0 0 12px rgba(192, 192, 192, 0.3);
+    transform: scale(1.05);
+    transition: all 0.3s ease-in-out;
+  }
+
+  /* Fondos secciones */
+  section, .content-area {
+    background-color: #bebbbb; /* gris oscuro suave */
+    border-radius: 1rem;
+    padding: 2rem;
+  }
+</style>
+{% endblock %}
+
+
+
+{% block content %}
+<section class="text-center pt-10 pb-24 px-4 max-w-6xl mx-auto">
+  <h2 class="text-3xl font-bold text-gray-800 mb-4">¡Hola, <strong>{{ user.username }}</strong>!</h2>
+
+  <div class="inline-flex items-center gap-2 bg-yellow-100 text-yellow-800 text-sm font-semibold px-4 py-1 rounded-full shadow-sm mb-4">
+    👑 Administrador – {{ user.perfil.get_rol_display }}
+  </div>
+
+  {% if user.perfil.rol == 'admin_subscribed' %}
+    <div class="bg-green-100 text-green-900 border border-green-300 px-6 py-4 rounded-xl shadow mb-10" data-aos="fade-up">
+      Tienes acceso completo para gestionar usuarios, estadísticas y crear winds globales.
+    </div>
+  {% else %}
+    <div class="bg-yellow-50 text-yellow-800 border border-yellow-300 px-6 py-4 rounded-xl shadow mb-10" data-aos="fade-up">
+      Estás usando el modo administrador gratuito. Puedes crear y gestionar usuarios y acceder a estadísticas avanzadas.
+      <br>
+      🚀
+    </div>
+  {% endif %}
+
+  <!-- Opciones -->
+  <!-- Círculo único para Grupos -->
+  <div class="flex flex-col justify-center items-center mt-12" data-aos="zoom-in">
+    <a href="{% url 'gestion_grupos' %}"
+      class="group w-[180px] h-[180px] md:w-[220px] md:h-[220px] bg-gradient-to-br from-[#a9a9a9] to-[#dcdcdc] text-black rounded-full flex flex-col justify-center items-center shadow-lg transition-all duration-500 hover:scale-110 hover:shadow-[0_0_25px_#ffffff] hover:from-[#c0c0c0] hover:to-[#f0f0f0]">
+      
+      <div class="text-4xl md:text-5xl mb-2">👥</div>
+      <div class="text-base md:text-lg font-semibold text-center">Gestionar<br>Grupos</div>
+    </a>
+
+    <!-- Descripción -->
+    <p class="mt-6 text-gray-700 text-sm md:text-base max-w-md text-center px-4" data-aos="fade-up">
+      Desde esta sección puedes crear, modificar y eliminar grupos de usuarios. Organiza tus equipos, asigna participantes y comienza a gestionar winds colectivos de forma eficiente.
+    </p>
+  </div>
+</section>
+{% endblock %}

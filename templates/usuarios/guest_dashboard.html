@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Modo Invitado | WindFlow{% endblock %}
+
+{% block content %}
+<section class="max-w-6xl mx-auto px-6 py-20 text-center" data-aos="fade-up">
+  <h1 class="text-4xl font-extrabold text-color1 mb-4">🌬️ WindFlow - Modo Invitado</h1>
+  <p class="text-gray-700 mb-10">Estás en modo invitado. Puedes usar las siguientes herramientas:</p>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+    <!-- Notas -->
+    <div class="bg-white rounded-xl shadow p-6 hover:shadow-lg transition" data-aos="zoom-in" data-aos-delay="100">
+      <h2 class="text-2xl font-bold text-color1 mb-2">📝 Notas</h2>
+      <p class="text-sm text-gray-600 mb-4">Crear, editar y eliminar notas.</p>
+      <a href="{% url 'guest_notas' %}" class="bg-color2 text-white py-2 px-4 rounded-lg hover:bg-color3 transition inline-block">
+        ✍️ Gestionar Notas
+      </a>
+    </div>
+
+    <!-- Pomodoro -->
+    <div class="bg-white rounded-xl shadow p-6 hover:shadow-lg transition" data-aos="zoom-in" data-aos-delay="200">
+      <h2 class="text-2xl font-bold text-color1 mb-2">⏱️ Pomodoro</h2>
+      <p class="text-sm text-gray-600 mb-4">Utiliza el temporizador Pomodoro con varias configuraciones.</p>
+      <a href="{% url 'guest_pomodoro' %}" class="bg-color1 text-white py-2 px-4 rounded-lg hover:bg-color3 transition inline-block">
+        ⏱️ Ir al Pomodoro
+      </a>
+    </div>
+  </div>
+
+  <!-- Navegación -->
+  <div class="mt-10 flex justify-center gap-4" data-aos="fade-up" data-aos-delay="300">
+    <a href="{% url 'login' %}" class="border border-color1 text-color1 py-2 px-6 rounded-lg hover:bg-color1 hover:text-white transition">Iniciar sesión</a>
+    <a href="{% url 'home' %}" class="border border-gray-400 text-gray-600 py-2 px-6 rounded-lg hover:bg-gray-200 transition">Volver al inicio</a>
+  </div>
+</section>
+{% endblock %}
