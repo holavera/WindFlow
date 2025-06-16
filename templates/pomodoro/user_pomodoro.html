@@ -1,0 +1,296 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Pomodoro - WindFlow{% endblock %}
+
+{% block extra_head %}
+<style>
+  .pomodoro-box {
+    background-color: white;
+    border-radius: 1rem;
+    padding: 2.5rem;
+    box-shadow: 0 0 30px rgba(0, 0, 0, 0.05);
+    max-width: 600px;
+    margin: auto;
+  }
+
+  .pomodoro-timer {
+    font-size: 4rem;
+    font-weight: bold;
+    color: #2E5077; /* color1 */
+  }
+
+  .progreso-ciclos {
+    font-size: 2rem;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-10 animate-fadeIn">
+
+  <div class="pomodoro-box">
+
+    <h2 class="text-center text-2xl font-bold text-color1 mb-6">⏰ Tu Sesión Pomodoro</h2>
+
+    <div class="text-center">
+
+      <div class="pomodoro-timer mb-6" id="timer">25:00</div>
+
+      <div class="flex justify-center gap-4 mb-6">
+        <button id="btnIniciar" class="px-5 py-2 rounded bg-emerald-500 text-white font-semibold hover:bg-emerald-600 transition" onclick="startTimer()">Iniciar</button>
+        <button class="px-5 py-2 rounded bg-yellow-400 text-white font-semibold hover:bg-yellow-500 transition" onclick="pauseTimer()">Pausar</button>
+        <button id="btnReset" class="px-5 py-2 rounded bg-gray-500 text-white font-semibold hover:bg-gray-600 transition" onclick="resetTimer()">Reiniciar</button>
+      </div>
+
+      <p class="text-sm text-gray-600 mt-2"><strong>Modo actual:</strong> <span id="tipo" class="text-color2 font-medium">foco</span></p>
+
+      <div class="mt-6">
+        <p class="text-sm text-gray-600 font-medium mb-2">🔁 Progreso de ciclos:</p>
+        <div id="progresoCiclos" class="progreso-ciclos text-color1"></div>
+      </div>
+
+      <a href="{% url 'historial_pomodoros' %}" class="inline-block mt-6 px-4 py-2 border border-color2 text-color2 rounded hover:bg-color2 hover:text-white transition">📊 Ver historial</a>
+
+    </div>
+  </div>
+</div>
+
+<!-- Audios -->
+<audio id="clickIniciar" src="{% static 'pomodoro/click-iniciar.mp3' %}"></audio>
+<audio id="clickPausar" src="{% static 'pomodoro/click-pausar.mp3' %}"></audio>
+<audio id="alarmaFin" src="{% static 'pomodoro/pomodoro.mp3' %}"></audio>
+{% endblock %}
+
+
+{% block extra_script %}
+  <script>
+    const configPomodoro = {
+      foco: parseFloat("{{ config.foco_min|default:25 }}"),
+      descanso_corto: parseFloat("{{ config.descanso_corto_min|default:5 }}"),
+      descanso_largo: parseFloat("{{ config.descanso_largo_min|default:15 }}"),
+      ciclos: parseInt("{{ config.ciclos|default:4 }}", 10),
+      nombre: "{{ config.nombre|default:'clásico' }}"
+    };
+
+    // 🔁 Ajuste especial para Mini_reto_3
+    if (configPomodoro.nombre === "Mini_Reto") {
+      configPomodoro.descanso_corto = 0.5; // explícito y exacto
+    }
+
+    if (configPomodoro.nombre.includes("Mini_Tiempo")) {
+        configPomodoro.descanso_corto = 0.5;
+    }
+
+
+    const clickIniciar = document.getElementById("clickIniciar");
+    const clickPausar = document.getElementById("clickPausar");
+    const alarmaFin = document.getElementById("alarmaFin");
+
+    const btnIniciar = document.getElementById("btnIniciar");
+
+    let tiempo = configPomodoro.foco * 60;
+    let cuenta = null;
+    let pausado = false;
+    let pausas = 0;
+    let sesionId = null;
+    let tiempoInicioReal = null;
+
+    let modoActual = 'foco';
+    let ciclosRealizados = 0;
+    let totalCiclos = configPomodoro.ciclos;
+
+    function updateDisplay() {
+      const minutos = Math.floor(tiempo / 60);
+      const segundos = tiempo % 60;
+      document.getElementById("timer").innerText = `${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
+    }
+
+    async function iniciarSesionBackend() {
+      const tipo = modoActual;  // ✅ Antes: fijo 'foco', ahora dinámico
+      const resp = await fetch('/pomodoro/iniciar/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+          tipo: tipo,
+          wind_id: "{{ wind.id|default_if_none:'' }}",
+          config_id: "{{ config.id|default_if_none:'' }}"
+        })
+      });
+      const data = await resp.json();
+      sesionId = data.id;
+    }
+
+    function mostrarNotificacionWeb() {
+      if (Notification.permission === "granted") {
+        new Notification("Pomodoro completado", {
+          body: "⏳ ¡Tu sesión ha terminado!",
+          icon: "/static/pomodoro/icon.png" // opcional, puedes cambiar esto
+        });
+      }
+    }
+
+
+
+    async function startTimer() {
+      if (cuenta || pausado) return;
+
+      // Pedir permiso de notificación
+      if (Notification.permission !== "granted" && Notification.permission !== "denied") {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            new Notification("🔔 Notificaciones activadas", {
+              body: "WindFlow te avisará cuando finalice un Pomodoro.",
+              icon: "/static/pomodoro/icon.png"
+            });
+          }
+        });
+      }
+      clickIniciar.play();
+      tiempoInicioReal = Date.now();
+
+
+      // Guardar sesión en backend
+      iniciarSesionBackend();
+
+      cuenta = setInterval(() => {
+        if (tiempo > 0) {
+          tiempo--;
+          updateDisplay();
+        } else {
+          clearInterval(cuenta);
+          cuenta = null;
+          finalizarSesion();
+          alarmaFin.play();
+          mostrarNotificacionWeb();
+          setTimeout(avanzarCiclo, 1000);
+        }
+      }, 1000);
+    }
+
+    function pauseTimer() {
+      if (cuenta) {
+        clearInterval(cuenta);
+        cuenta = null;
+        pausado = true;
+        pausas++;
+
+        clickPausar.play();
+
+        // Cambiar color del botón de iniciar para indicar que no se puede usar
+        btnIniciar.classList.remove("bg-emerald-500", "hover:bg-emerald-600", "text-white");
+        btnIniciar.classList.add("bg-gray-200", "text-gray-500", "cursor-not-allowed");
+        btnIniciar.disabled = true;
+      }
+    }
+
+    function resetTimer() {
+      clearInterval(cuenta);
+      cuenta = null;
+      pausado = false;
+      pausas = 0;
+      sesionId = null;
+      ciclosRealizados = 0;
+
+      cargarTiempoSegunModo();  // ✅ Respeta el modo actual (foco, descanso corto o largo)
+
+      // Restaurar botón iniciar
+      btnIniciar.disabled = false;
+      btnIniciar.classList.remove("bg-gray-200", "text-gray-500", "cursor-not-allowed");
+      btnIniciar.classList.add("bg-emerald-500", "hover:bg-emerald-600", "text-white");
+    }
+
+
+    async function finalizarSesion() {
+      if (!sesionId) return;
+
+      const duracionReal = Math.round((Date.now() - tiempoInicioReal) / 60000);  // tiempo real en minutos
+
+      await fetch('/pomodoro/finalizar/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+          id: sesionId,
+          duracion: duracionReal
+        })
+      });
+    }
+
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+          const cookie = cookies[i].trim();
+          if (cookie.substring(0, name.length + 1) === (name + '=')) {
+            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    function cargarTiempoSegunModo() {
+      if (modoActual === 'foco') {
+        tiempo = Math.round(configPomodoro.foco * 60);
+      } else if (modoActual === 'descanso_corto') {
+        tiempo = Math.round(configPomodoro.descanso_corto * 60);
+      } else if (modoActual === 'descanso_largo') {
+        tiempo = Math.round(configPomodoro.descanso_largo * 60);
+      }
+      updateDisplay();
+      document.getElementById("tipo").innerText = modoActual;
+    }
+
+
+    function avanzarCiclo() {
+      if (modoActual === 'foco') {
+        ciclosRealizados++;
+        if (ciclosRealizados >= totalCiclos) {
+          modoActual = 'descanso_largo';
+          ciclosRealizados = 0;
+        } else {
+          modoActual = 'descanso_corto';
+        }
+      } else if (modoActual === 'descanso_largo') {
+        // ✅ Terminar el Pomodoro completamente después del descanso largo
+        modoActual = 'foco';
+        cargarTiempoSegunModo();
+        actualizarEstrellas();
+        return;  // No continuar automáticamente
+      } else {
+        modoActual = 'foco';
+      }
+
+      cargarTiempoSegunModo();
+      actualizarEstrellas();
+      startTimer();  // Solo si aún quedan ciclos
+    }
+
+
+    function actualizarEstrellas() {
+      const contenedor = document.getElementById("progresoCiclos");
+      let estrellas = "";
+
+      for (let i = 0; i < ciclosRealizados; i++) {
+        estrellas += "⭐ ";
+      }
+
+      if (modoActual === 'descanso_largo') {
+        estrellas += "🌟";
+      }
+
+      contenedor.innerHTML = estrellas;
+    }
+
+    window.onload = updateDisplay;
+  </script>
+{% endblock %}

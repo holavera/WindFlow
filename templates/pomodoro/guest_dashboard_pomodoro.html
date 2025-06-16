@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Pomodoro Invitado | WindFlow{% endblock %}
+
+{% block content %}
+<section class="max-w-4xl mx-auto px-6 py-20 text-center" data-aos="fade-up">
+  <h2 class="text-3xl font-bold text-color1 mb-6">⏱️ Temporizador Pomodoro</h2>
+
+  <!-- Selector de configuración -->
+  <form id="pomodoroForm" class="flex flex-col md:flex-row items-center justify-center gap-4 mb-8">
+    {% csrf_token %}
+    <select class="border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-color2" id="configSelect">
+      <option value="25-5-15">2 ciclos de 25min - descanso corto 5min - largo 15min</option>
+      <option value="40-10-20">2 ciclos de 40min - descanso corto 10min - largo 20min</option>
+      <option value="1-0.33-0.33">Demo: 2 ciclos de 1min - descanso corto 20s - largo 20s</option>
+    </select>
+    <button type="submit" class="bg-color2 text-white px-6 py-2 rounded-lg hover:bg-color3 transition">
+      Iniciar Pomodoro
+    </button>
+  </form>
+
+  <!-- Pantalla Pomodoro -->
+  <div id="pomodoroDisplay" style="display: none;">
+    <h5 class="text-lg mb-4">⏳ Ciclo <span id="cicloActual">1</span>/2 — <span id="faseActual">Foco</span></h5>
+    <div class="pomodoro-timer mx-auto">
+      <span id="tiempoRestante">00:00</span>
+    </div>
+    <div id="tablaEstrellas" class="mt-3 text-lg"></div>
+    <div class="flex justify-center gap-4 mt-4">
+      <button class="bg-yellow-400 text-white px-4 py-2 rounded-lg hover:bg-yellow-500 transition"
+              onclick="pausarPomodoro(); reproducirClickPausar()">⏸️ Pausar</button>
+      <button class="border border-red-500 text-red-500 px-4 py-2 rounded-lg hover:bg-red-100 transition"
+              onclick="location.reload()">🔁 Reiniciar</button>
+    </div>
+  </div>
+
+  <div class="mt-8">
+    <a href="{% url 'guest_mode' %}" class="border border-gray-400 text-gray-700 py-2 px-6 rounded-lg hover:bg-gray-200 transition">
+      ⬅ Volver al menú
+    </a>
+  </div>
+</section>
+
+<!-- Audios -->
+<audio id="alarmaPomodoro" src="{% static 'pomodoro/pomodoro.mp3' %}" preload="auto"></audio>
+<audio id="sonidoClickIniciar" src="{% static 'pomodoro/click-iniciar.mp3' %}" preload="auto"></audio>
+<audio id="sonidoClickPausar" src="{% static 'pomodoro/click-pausar.mp3' %}" preload="auto"></audio>
+{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Solución para footer flotante */
+  html, body {
+    height: 100%;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  main {
+    flex: 1;
+  }
+</style>
+<style>
+  .pomodoro-timer {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: conic-gradient(#4DA1A9 0%, #E0E0E0 0%);
+    box-shadow: 0 12px 25px rgba(77, 161, 169, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 30px auto;
+    transition: background 0.3s ease;
+  }
+
+  .pomodoro-timer::before {
+    content: "";
+    position: absolute;
+    width: 85%;
+    height: 85%;
+    border-radius: 50%;
+    background: white;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.06);
+    z-index: 0;
+  }
+
+  .pomodoro-timer span {
+    position: relative;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: #2E5077;
+    z-index: 1;
+    font-family: 'Courier New', Courier, monospace;
+  }
+
+  .big-star {
+    font-size: 1.75rem;
+    color: #FFD700;
+    animation: pulse 1.5s infinite alternate;
+  }
+
+  @keyframes pulse {
+    from { transform: scale(1); opacity: 0.7; }
+    to { transform: scale(1.2); opacity: 1; }
+  }
+</style>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+    const pomodoroForm = document.getElementById('pomodoroForm');
+    const display = document.getElementById('pomodoroDisplay');
+    const cicloActual = document.getElementById('cicloActual');
+    const faseActual = document.getElementById('faseActual');
+    const tiempoRestante = document.getElementById('tiempoRestante');
+
+    let ciclosTotales = 2;
+    let ciclo = 1;
+    let focoMin = 25, cortoMin = 5, largoMin = 15;
+    let fase = 'foco';
+    let tiempo = 0;
+    let tiempoInicial = 0;
+    let timer = null;
+    let fasesCompletadas = 0;
+
+    pomodoroForm.addEventListener('submit', e => {
+      e.preventDefault();
+      const config = document.getElementById('configSelect').value;
+      const [foco, corto, largo] = config.split('-').map(Number);
+      focoMin = foco;
+      cortoMin = corto;
+      largoMin = largo;
+
+      ciclo = 1;
+      fase = 'foco';
+      fasesCompletadas = 0;
+      reproducirClickIniciar();
+      mostrarEstrellas();
+      iniciarFase(focoMin);
+    });
+
+    function iniciarFase(minutos) {
+      tiempo = Math.round(minutos * 60);
+      tiempoInicial = tiempo;
+      display.style.display = 'block';
+      actualizarPantalla();
+
+      clearInterval(timer);
+      timer = setInterval(() => {
+        tiempo--;
+        actualizarPantalla();
+
+        if (tiempo <= 0) {
+          clearInterval(timer);
+          cambiarFase();
+        }
+      }, 1000);
+    }
+
+    function cambiarFase() {
+      document.getElementById('alarmaPomodoro').play();
+      mostrarNotificacion(`¡Tiempo de ${fase === 'foco' ? 'descanso' : 'foco'}!`);
+      fasesCompletadas++;
+      mostrarEstrellas();
+
+      if (fase === 'foco') {
+        fase = (ciclo === ciclosTotales) ? 'descanso_largo' : 'descanso_corto';
+        iniciarFase(fase === 'descanso_corto' ? cortoMin : largoMin);
+      } else {
+        ciclo++;
+        if (ciclo > ciclosTotales) {
+          display.innerHTML += `<div class="alert alert-success mt-3">¡Pomodoro completado! ✅</div>`;
+          return;
+        }
+        fase = 'foco';
+        iniciarFase(focoMin);
+      }
+    }
+
+    function pausarPomodoro() {
+      if (timer) clearInterval(timer);
+    }
+
+    function actualizarPantalla() {
+      const minutos = Math.floor(tiempo / 60).toString().padStart(2, '0');
+      const segundos = (tiempo % 60).toString().padStart(2, '0');
+      tiempoRestante.textContent = `${minutos}:${segundos}`;
+      cicloActual.textContent = ciclo;
+      faseActual.textContent = fase === 'foco' ? 'Foco' : (fase === 'descanso_corto' ? 'Descanso corto' : 'Descanso largo');
+
+      const porcentaje = ((tiempoInicial - tiempo) / tiempoInicial) * 100;
+      document.querySelector('.pomodoro-timer').style.background =
+        `conic-gradient(#0d6efd ${porcentaje}%, #e9ecef ${porcentaje}%)`;
+    }
+
+    function mostrarEstrellas() {
+      let estrellaHTML = '⭐'.repeat(fasesCompletadas);
+      let grandes = ' <span class="big-star">🌟</span>'.repeat(Math.floor(fasesCompletadas / 2));
+      document.getElementById('tablaEstrellas').innerHTML =
+        `${estrellaHTML}${grandes}<br>${fasesCompletadas} fases completadas`;
+    }
+
+    function mostrarNotificacion(mensaje) {
+      if (Notification.permission === "granted") {
+        new Notification("WindFlow - Pomodoro", {
+          body: mensaje,
+          icon: "https://cdn-icons-png.flaticon.com/512/3176/3176367.png"
+        });
+      } else if (Notification.permission !== "denied") {
+        Notification.requestPermission().then(permission => {
+          if (permission === "granted") {
+            new Notification("WindFlow - Pomodoro", {
+              body: mensaje,
+              icon: "https://cdn-icons-png.flaticon.com/512/3176/3176367.png"
+            });
+          }
+        });
+      }
+    }
+
+    function reproducirClickIniciar() {
+      const audio = document.getElementById('sonidoClickIniciar');
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+    }
+
+    function reproducirClickPausar() {
+      const audio = document.getElementById('sonidoClickPausar');
+      audio.currentTime = 0;
+      audio.play().catch(() => {});
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      if ("Notification" in window) {
+        Notification.requestPermission();
+      }
+    });
+{{ block.super }}
+</script>
+{% endblock %}

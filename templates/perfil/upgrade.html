@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Suscripción WindFlow Premium{% endblock %}
+
+{% block extra_head %}
+<script src="https://js.stripe.com/v3/"></script>
+<style>
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  main {
+    flex: 1;
+  }
+
+  footer {
+    background-color: #2E5077; /* color1 */
+    color: white;
+    text-align: center;
+    padding: 1.5rem 1rem;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto px-6 py-16 animate-fadeIn">
+
+  <h2 class="text-3xl font-bold text-color1 text-center mb-6">
+    💎 WindFlow Premium
+  </h2>
+  <p class="text-center text-gray-600 mb-10">
+    Desbloquea acceso ilimitado a estadísticas, historial pomodoro y exportar en PDF <strong>2,99 €/mes</strong>.
+  </p>
+
+  <form id="payment-form" class="bg-white shadow-md rounded-xl p-6 space-y-6 border-l-4 border-color2">
+    <div id="payment-element"></div>
+
+    <div class="flex justify-between items-center pt-4">
+      <button id="submit"
+              class="px-6 py-2 bg-emerald-500 text-white rounded hover:bg-emerald-600 transition font-semibold">
+        Pagar ahora
+      </button>
+      <div id="error-message" class="text-red-500 text-sm font-medium"></div>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+  const stripe = Stripe('{{ STRIPE_PUBLIC_KEY }}');
+  const options = { clientSecret: '{{ client_secret }}' };
+  const elements = stripe.elements(options);
+  const paymentElement = elements.create('payment');
+  paymentElement.mount('#payment-element');
+
+  const form = document.getElementById('payment-form');
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const {error} = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: 'http://127.0.0.1:8000/perfil/pago/completado/',
+      },
+    });
+
+    if (error) {
+      const messageContainer = document.getElementById('error-message');
+      messageContainer.textContent = error.message;
+    }
+  });
+</script>
+{% endblock %}

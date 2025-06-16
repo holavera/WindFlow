@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Estadísticas del Usuario - WindFlow{% endblock %}
+
+{% block extra_head %}
+<style>
+  nav {
+    background-color: #1B4332 !important; /* Verde oscuro elegante */
+  }
+
+  nav a {
+    transition: color 0.3s ease;
+  }
+
+  nav a:hover {
+    color: #74C69D !important; /* Verde claro para efecto hover */
+  }
+
+  footer {
+    background-color: #1B4332 !important;
+    color: white;
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<section class="max-w-6xl mx-auto py-12 px-4 animate-fadeIn">
+  <div class="flex justify-between items-center mb-8">
+    <h2 class="text-3xl font-bold text-color1">📊 Estadísticas de {{ user.username }}</h2>
+    <a href="{% url 'dashboard_suscrito' %}" class="btn inline-flex items-center gap-2 px-4 py-2 border rounded-lg text-sm font-medium bg-white text-color1 border-color1 hover:bg-color1 hover:text-white transition">
+      ← Volver al Dashboard de Usuario Suscrito
+    </a>
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Tiempo Pomodoro -->
+    <div class="bg-white shadow-lg rounded-xl p-6 text-center hover:scale-[1.02] transition">
+      <div class="text-4xl mb-3">⏰</div>
+      <h5 class="text-lg font-semibold text-color1 mb-2">Tiempo Pomodoro Total</h5>
+      <p class="text-3xl font-bold text-gray-800">{{ tiempo_total }} min</p>
+      <p class="text-sm text-gray-500 mt-2">Sesiones de Pomodoro: {{ pomodoros_semana }}</p>
+    </div>
+
+    <!-- Tareas -->
+    <div class="bg-white shadow-lg rounded-xl p-6 text-center hover:scale-[1.02] transition">
+      <div class="text-4xl mb-3">✅</div>
+      <h5 class="text-lg font-semibold text-color1 mb-2">Tareas</h5>
+      <p class="text-xl font-bold text-gray-800">
+        {{ tareas_completadas }} completadas / {{ tareas_pendientes }} pendientes
+      </p>
+      <p class="text-sm text-gray-500 mt-2">Productividad: {{ productividad }}%</p>
+    </div>
+
+    <!-- Notas -->
+    <div class="bg-white shadow-lg rounded-xl p-6 text-center hover:scale-[1.02] transition">
+      <div class="text-4xl mb-3">📝</div>
+      <h5 class="text-lg font-semibold text-color1 mb-2">Notas</h5>
+      <p class="text-3xl font-bold text-gray-800">{{ num_notas }}</p>
+    </div>
+
+    <!-- Winds -->
+    <div class="bg-white shadow-lg rounded-xl p-6 text-center hover:scale-[1.02] transition">
+      <div class="text-4xl mb-3">🌪️</div>
+      <h5 class="text-lg font-semibold text-color1 mb-2">Winds</h5>
+      <p class="text-3xl font-bold text-gray-800">{{ num_winds }}</p>
+      <p class="text-sm text-gray-500 mt-2">Promedio de elementos: {{ promedio_wind }}</p>
+      {% if wind_mas_usado %}
+        <p class="text-sm text-gray-700 mt-1">Más usado: <span class="font-medium">{{ wind_mas_usado.titulo }}</span></p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+{% endblock %}

@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tareas - WindFlow{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-10 animate-fadeIn">
+
+  <!-- Encabezado -->
+  <div class="flex flex-col md:flex-row md:justify-between items-start md:items-center gap-4 mb-6">
+    <h2 class="text-3xl font-bold text-color1">✅ Mis Tareas</h2>
+    <div class="flex gap-2">
+      <a href="{% url 'dashboard' %}" class="px-4 py-2 border border-color2 text-color2 rounded hover:bg-color2 hover:text-white transition">← Panel</a>
+    </div>
+  </div>
+
+  <!-- Filtros de estado -->
+  <div class="flex flex-wrap gap-2 mb-6">
+    <a href="{% url 'user_tareas' %}" class="px-4 py-1 rounded text-sm {% if not filtro_actual %}bg-color2 text-white{% else %}border border-color2 text-color2{% endif %} transition">Todas</a>
+    {% for valor, nombre in tareas.paginator.object_list.model.ESTADO_CHOICES %}
+      <a href="?estado={{ valor }}" class="px-4 py-1 rounded text-sm {% if filtro_actual == valor %}bg-color2 text-white{% else %}border border-color2 text-color2{% endif %} transition">{{ nombre }}</a>
+    {% endfor %}
+  </div>
+
+  <!-- Formulario de nueva tarea -->
+  <form method="post" class="bg-white shadow-md rounded-xl p-6 mb-10 border-l-4 border-color2">
+    {% csrf_token %}
+    <h5 class="text-lg font-semibold mb-4">➕ Añadir nueva tarea</h5>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+      <input type="text" name="titulo" class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-color2" placeholder="Título" required>
+      <input type="date" name="fecha_limite" class="p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-color2" placeholder="Fecha límite">
+    </div>
+    {% if error_msg %}
+      <div class="alert alert-danger mt-3">
+        {{ error_msg }}
+      </div>
+    {% endif %}
+    <textarea name="descripcion" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-color2" placeholder="Descripción (opcional)"></textarea>
+    <div class="text-right mt-4">
+      <button type="submit" class="px-6 py-2 bg-emerald-500 text-white font-semibold rounded hover:bg-emerald-600 transition">
+        Guardar tarea
+      </button>
+    </div>
+  </form>
+
+
+
+  <!-- Tarjetas de tareas -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    {% for tarea in tareas %}
+      <div class="bg-white shadow-md rounded-xl p-5 border border-gray-100 flex flex-col justify-between h-full overflow-hidden">
+        <div>
+          <h5 class="text-xl font-bold text-color1 mb-2 break-words">{{ tarea.titulo }}</h5>
+          {% if tarea.descripcion %}
+            <p class="text-gray-700 mb-2 whitespace-pre-line break-words">{{ tarea.descripcion }}</p>
+          {% endif %}
+          <p class="text-sm text-gray-500">
+            Estado: <strong>{{ tarea.get_estado_display }}</strong><br>
+            {% if tarea.fecha_limite %}Vence: {{ tarea.fecha_limite }}{% endif %}
+          </p>
+        </div>
+        <div class="flex justify-end gap-2 mt-4">
+          <a href="{% url 'editar_tarea' tarea.id %}" class="text-sm px-4 py-1 border border-blue-500 text-blue-500 rounded hover:bg-blue-50 transition">✏️ Editar</a>
+          <a href="{% url 'eliminar_tarea' tarea.id %}" class="text-sm px-4 py-1 border border-red-500 text-red-500 rounded hover:bg-red-50 transition" onclick="return confirm('¿Eliminar esta tarea?');">🗑️ Borrar</a>
+        </div>
+      </div>
+    {% empty %}
+      <p class="text-gray-500 col-span-2">No hay tareas en esta categoría.</p>
+    {% endfor %}
+  </div>
+
+  <!-- Paginación -->
+  {% if tareas.has_other_pages %}
+    <nav class="mt-10">
+      <ul class="flex justify-center gap-1">
+        {% if tareas.has_previous %}
+          <li>
+            <a href="?{% if filtro_actual %}estado={{ filtro_actual }}&{% endif %}page={{ tareas.previous_page_number }}"
+               class="px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 text-sm">Anterior</a>
+          </li>
+        {% endif %}
+        {% for num in tareas.paginator.page_range %}
+          <li>
+            <a href="?{% if filtro_actual %}estado={{ filtro_actual }}&{% endif %}page={{ num }}"
+               class="px-3 py-1 rounded text-sm border {% if num == tareas.number %}bg-color2 text-white{% else %}border-gray-300 hover:bg-gray-100{% endif %}">
+              {{ num }}
+            </a>
+          </li>
+        {% endfor %}
+        {% if tareas.has_next %}
+          <li>
+            <a href="?{% if filtro_actual %}estado={{ filtro_actual }}&{% endif %}page={{ tareas.next_page_number }}"
+               class="px-3 py-1 rounded border border-gray-300 hover:bg-gray-100 text-sm">Siguiente</a>
+          </li>
+        {% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+</div>
+{% endblock %}

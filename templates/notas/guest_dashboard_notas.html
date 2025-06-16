@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Notas Invitado | WindFlow{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* Solución para footer flotante */
+  html, body {
+    height: 100%;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+  }
+
+  main {
+    flex: 1;
+  }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<section class="max-w-4xl mx-auto px-6 py-20" data-aos="fade-up">
+  <h2 class="text-3xl font-bold text-color1 text-center mb-8">📝 Tus notas (modo invitado)</h2>
+
+  <!-- Formulario crear nota -->
+  <form method="POST" action="{% url 'guest_notas' %}" class="flex flex-col md:flex-row gap-4 items-center mb-10">
+    {% csrf_token %}
+    <input type="text" name="contenido" id="inputNota" placeholder="Escribe una nota rápida..."
+           class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-color2"
+           autocomplete="off">
+    <button type="submit" class="bg-color1 text-white px-6 py-2 rounded-lg hover:bg-color2 transition">
+      Guardar
+    </button>
+  </form>
+
+  <!-- Lista de notas -->
+  <ul class="space-y-4">
+    {% for nota in notas %}
+      <li class="bg-white shadow rounded-lg p-4" data-aos="fade-up" data-aos-delay="{{ forloop.counter0|add:'1' }}00">
+        <div class="flex justify-between items-center">
+          <div>
+            <strong class="text-sm text-color1">{{ nota.fecha }}</strong>
+            <p class="text-gray-800 mt-1 break-all" id="contenido-{{ nota.id }}">{{ nota.contenido }}</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="mostrarEdicion('{{ nota.id }}')"
+                    class="text-sm text-gray-500 hover:text-color2 transition">✏️ Editar</button>
+            <form method="POST" action="{% url 'eliminar_nota_guest' %}">
+              {% csrf_token %}
+              <input type="hidden" name="nota_id" value="{{ nota.id|stringformat:'f' }}">
+              <button type="submit" class="text-sm text-red-600 hover:text-red-800 transition">🗑️ Eliminar</button>
+            </form>
+          </div>
+        </div>
+
+        <!-- Formulario de edición -->
+        <form method="POST" action="{% url 'editar_nota_guest' nota.id %}" class="edit-form mt-4 hidden" id="form-editar-{{ nota.id }}">
+          {% csrf_token %}
+          <div class="flex flex-col md:flex-row gap-2">
+            <input type="text" name="contenido"
+                   class="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-color2"
+                   value="{{ nota.contenido }}">
+            <button class="bg-color2 text-white px-4 py-2 rounded-lg hover:bg-color3 transition">Guardar</button>
+          </div>
+        </form>
+      </li>
+    {% empty %}
+      <li class="text-center text-gray-500">No tienes notas aún.</li>
+    {% endfor %}
+  </ul>
+
+  <!-- Botón volver -->
+  <div class="mt-10 text-center" data-aos="fade-up" data-aos-delay="300">
+    <a href="{% url 'guest_mode' %}" class="border border-gray-400 text-gray-700 py-2 px-6 rounded-lg hover:bg-gray-200 transition">
+      ⬅ Volver al menú
+    </a>
+  </div>
+</section>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+  function mostrarEdicion(id) {
+    const form = document.getElementById('form-editar-' + id);
+    form.classList.toggle('hidden');
+  }
+</script>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Panel Premium - WindFlow{% endblock %}
+
+{% block extra_head %}
+<style>
+  nav {
+    background-color: #1B4332 !important; /* Verde oscuro elegante */
+  }
+
+  nav a {
+    transition: color 0.3s ease;
+  }
+
+  nav a:hover {
+    color: #74C69D !important; /* Verde claro para efecto hover */
+  }
+
+  footer {
+    background-color: #1B4332 !important;
+    color: white;
+  }
+</style>
+{% endblock %}
+
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-10 animate-fadeIn">
+
+  <!-- Encabezado -->
+  <div class="bg-green-100 text-green-800 border border-green-300 px-6 py-4 rounded-xl shadow-md mb-8 text-center">
+    <h2 class="text-3xl font-bold mb-2">🌬️ Bienvenido {{ user.username }} a WindFlow Premium</h2>
+    <p class="text-sm">Gracias por apoyar WindFlow. Disfruta de todas las funciones exclusivas como estadísticas avanzadas, exportaciones y winds ilimitados.</p>
+  </div>
+
+  <!-- Tarjetas -->
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-10">
+
+    <!-- Estadísticas -->
+    <div class="bg-white shadow-md rounded-xl p-6 text-center border-l-4 border-color2">
+      <h3 class="text-lg font-semibold text-color1 mb-2">📊 Estadísticas</h3>
+      <p class="text-sm text-gray-600 mb-4">Consulta el resumen de tu actividad.</p>
+      <a href="{% url 'estadisticas_usuario' %}" class="inline-block px-4 py-2 border border-color2 text-color2 rounded hover:bg-color2 hover:text-white transition text-sm">Ver estadísticas</a>
+    </div>
+
+    <!-- Exportar -->
+    <div class="bg-white shadow-md rounded-xl p-6 text-center border-l-4 border-blue-400">
+      <h3 class="text-lg font-semibold text-blue-600 mb-2">📥 Exportar Datos</h3>
+      <p class="text-sm text-gray-600 mb-4">Descarga tus recursos en PDF.</p>
+      <div class="flex flex-col gap-2">
+        <a href="{% url 'exportar_notas_pdf' %}" class="text-sm px-4 py-2 border border-blue-500 text-blue-500 rounded hover:bg-blue-50">📝 Notas</a>
+        <a href="{% url 'exportar_tareas_pdf' %}" class="text-sm px-4 py-2 border border-blue-500 text-blue-500 rounded hover:bg-blue-50">✅ Tareas</a>
+        <a href="{% url 'exportar_estadisticas_pdf' %}" class="text-sm px-4 py-2 border border-blue-500 text-blue-500 rounded hover:bg-blue-50">📊 Estadísticas</a>
+      </div>
+    </div>
+
+    <!-- Historial -->
+    <div class="bg-white shadow-md rounded-xl p-6 text-center border-l-4 border-indigo-400">
+      <h3 class="text-lg font-semibold text-indigo-600 mb-2">📆 Historial de Pomodoro</h3>
+      <p class="text-sm text-gray-600 mb-4">Consulta todas tus sesiones Pomodoro.</p>
+      <a href="{% url 'historial_pomodoros' %}" class="inline-block px-4 py-2 border border-indigo-500 text-indigo-500 rounded hover:bg-indigo-50 transition text-sm">Ver historial</a>
+    </div>
+  </div>
+
+  <!-- Suscripción -->
+  <div class="bg-white shadow-md rounded-xl p-6 border-l-4 border-red-400">
+    <h3 class="text-lg font-semibold text-red-600 mb-2">🧾 Detalles de tu suscripción</h3>
+    <p class="text-sm text-gray-700 mb-1"><strong>Fecha de suscripción:</strong> {{ request.user.perfil.suscripcion.fecha_inicio|date:"d M Y" }}</p>
+    <p class="text-sm text-gray-700 mb-4"><strong>Renovación hasta:</strong> {{ request.user.perfil.suscripcion.fecha_renovacion|date:"d M Y" }}</p>
+
+    {% if request.user.perfil.suscripcion.activa %}
+      <form method="POST" action="{% url 'cancelar_suscripcion' %}" class="mt-3">
+        {% csrf_token %}
+        <button class="px-5 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition">Cancelar suscripción</button>
+      </form>
+    {% else %}
+      <div class="bg-blue-100 text-blue-800 px-4 py-3 rounded mt-3 text-sm">
+        Suscripción cancelada. Tienes acceso hasta {{ request.user.perfil.suscripcion.fecha_renovacion|date:"d M Y" }}.
+      </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

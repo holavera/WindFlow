@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      font-size: 11px;
+      padding: 30px;
+      color: #333;
+    }
+    h2 {
+      text-align: center;
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      border: 1px solid #999;
+      padding: 6px 8px;
+      text-align: center;
+    }
+    th {
+      background-color: #f0f0f0;
+      font-weight: bold;
+    }
+    tr:nth-child(even) {
+      background-color: #f9f9f9;
+    }
+  </style>
+</head>
+<body>
+  <h2>📊 Estadísticas del grupo: {{ grupo.nombre }}</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Usuario</th>
+        <th>Email</th>
+        <th>Winds</th>
+        <th>Prom. elementos/Wind</th>
+        <th>Focus</th>
+        <th>Pomodoros</th>
+        <th>Completados</th>
+        <th>Minutos</th>
+        <th>Sesión larga</th>
+        <th>Pausas</th>
+        <th>Config. usada</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for est in estadisticas %}
+        <tr>
+          <td>{{ est.usuario }}</td>
+          <td>{{ est.email }}</td>
+          <td>{{ est.num_winds }}</td>
+          <td>{{ est.promedio_elementos }}</td>
+          <td>{{ est.winds_focus }}</td>
+          <td>{{ est.pomodoros }}</td>
+          <td>{{ est.porcentaje_completadas }} %</td>
+          <td>{{ est.minutos }}</td>
+          <td>{{ est.mas_larga }}</td>
+          <td>{{ est.pausas_promedio }}</td>
+          <td>{{ est.config }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</body>
+</html>

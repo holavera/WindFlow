@@ -1,0 +1,130 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>{% block title %}WindFlow{% endblock %}</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- AOS (Animate On Scroll) CSS -->
+  <link href="https://unpkg.com/aos@2.3.4/dist/aos.css" rel="stylesheet">
+  <link rel="icon" type="image/png" href="{% static 'img/logo.png' %}">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            color1: '#2E5077',
+            color2: '#4DA1A9',
+            color3: '#79D7BE',
+            color4: '#F6F4F0',
+			color5: '#3E6C93'
+          },
+          animation: {
+            fadeIn: 'fadeIn 2s ease-in-out',
+          },
+          keyframes: {
+            fadeIn: {
+              '0%': { opacity: 0 },
+              '100%': { opacity: 1 },
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+		background-color: #F6F4F0;
+    }
+	nav img {
+		width: 100px !important;
+		height: auto;
+	}
+	nav a:hover {
+		color: #79D7BE;
+	}
+  </style>
+  <style>
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  main {
+    flex: 1;
+  }
+
+  footer {
+    background-color: #2E5077; /* color1 */
+    color: white;
+    text-align: center;
+    padding: 1.5rem 1rem;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+</style>
+  {% block extra_head %}
+  {% endblock %}
+</head>
+<body class="text-gray-800">
+
+  <!-- NAVBAR -->
+  <nav class="bg-color1 text-white shadow-lg py-4">
+    <div class="max-w-7xl mx-auto flex justify-between items-center px-6">
+      <a href="#" class="flex items-center">
+        <img src="{% static 'WF.png' %}" alt="Logo" class="w-20">
+      </a>
+      <ul class="flex space-x-4">
+        {% if not user.is_authenticated %}
+          <li><a href="{% url 'login' %}" class="hover:underline">Iniciar Sesión</a></li>
+          <li><a href="{% url 'register' %}" class="hover:underline">Crear Cuenta</a></li>
+        {% else %}
+          {% if user.profile.es_admin_publico %}
+            <li><a href="{% url 'panel_admin_publico' %}" class="hover:underline">Panel Admin</a></li>
+          {% else %}
+            <li>
+              <a href="{% url 'dashboard' %}" class="hover:underline">
+                {% if request.resolver_match.url_name == 'dashboard_suscrito' %}
+                  Dashboard Usuario Gratuito
+                {% else %}
+                  Dashboard
+                {% endif %}
+              </a>
+            </li>
+          {% endif %}
+          <li><a href="{% url 'logout' %}" class="hover:underline">Cerrar Sesión</a></li>
+        {% endif %}
+      </ul>
+    </div>
+  </nav>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <main>
+    {% block content %}{% endblock %}
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="bg-color1 text-white text-center py-6">
+    <p>&copy; 2025 WindFlow. Todos los derechos reservados.</p>
+  </footer>
+
+  <!-- AOS Script -->
+	<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+	<script>
+		AOS.init({
+			duration: 1200,
+			once: true
+		});
+	</script>
+
+	{% block extra_script %}
+  {% endblock %}
+
+
+</body>
+</html>

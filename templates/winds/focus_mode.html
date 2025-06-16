@@ -1,0 +1,359 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ wind.titulo }} - Focus Mode{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-10 animate-fadeIn">
+
+  <!-- Volver -->
+  <a href="{% url 'user_winds' %}" class="text-sm text-color2 hover:underline mb-4 inline-block">← Volver a Winds</a>
+
+  <!-- Encabezado -->
+  <div class="text-center mb-10">
+    <h1 class="text-3xl font-bold text-color1">{{ wind.titulo }}</h1>
+    <p class="text-gray-500">{{ wind.descripcion }}</p>
+  </div>
+
+  <!-- Tareas y Notas -->
+  <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+    <!-- Tareas -->
+    <div class="bg-white rounded-xl p-6 shadow section-box">
+      <h4 class="text-lg font-semibold text-color2 mb-4">✅ Tareas</h4>
+      <ul class="divide-y divide-gray-200 text-sm">
+        {% for tarea in wind.tareas.all %}
+          <li class="py-2 flex justify-between items-center">
+            <div class="flex items-center gap-2">
+              <input type="checkbox"
+                     data-tarea-id="{{ tarea.id }}"
+                     onchange="actualizarTarea(this)"
+                     {% if tarea.completada %}checked{% endif %}
+                     class="w-5 h-5 text-color2 border-gray-300 rounded">
+              <span>{{ tarea.titulo }}</span>
+            </div>
+            <span id="estado-tarea-{{ tarea.id }}"
+                  class="text-xs px-2 py-1 rounded
+                         {% if tarea.completada %}
+                           bg-emerald-100 text-emerald-600
+                         {% else %}
+                           bg-gray-200 text-gray-600
+                         {% endif %}">
+              {% if tarea.completada %}Completa{% else %}Pendiente{% endif %}
+            </span>
+          </li>
+        {% empty %}
+          <li class="py-2 text-gray-400 italic">Sin tareas aún.</li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <!-- Notas -->
+    <div class="bg-white rounded-xl p-6 shadow section-box">
+      <h4 class="text-lg font-semibold text-emerald-600 mb-4">📝 Notas</h4>
+      <ul class="divide-y divide-gray-200 text-sm">
+        {% for nota in wind.notas.all %}
+          <li class="py-2 break-words">{{ nota.contenido }}</li>
+        {% empty %}
+          <li class="py-2 text-gray-400 italic">No hay notas asociadas.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+
+  <!-- Pomodoro -->
+  <div class="bg-white rounded-xl p-6 shadow mt-10 text-center section-box">
+    <h4 class="text-lg font-semibold text-color1">⏰ Pomodoro ({{ wind.pomodoro.nombre }})</h4>
+    <p class="text-sm text-gray-600 mt-1 mb-4">
+      Foco: {{ wind.pomodoro.foco_min }} min |
+      Desc. corto: {{ wind.pomodoro.descanso_corto_min }} min
+    </p>
+
+    <div class="timer text-5xl font-extrabold text-color2 my-6" id="timer">00:00</div>
+
+    <div id="mensaje-fin" class="hidden text-emerald-600 font-semibold mt-3">
+      🎉 ¡Has terminado tu Pomodoro!
+    </div>
+
+    <div class="flex justify-center gap-4 mt-6">
+      <button id="btnIniciar"
+              class="px-5 py-2 rounded bg-emerald-500 text-white font-semibold hover:bg-emerald-600 transition"
+              onclick="startTimer()">
+        Iniciar
+      </button>
+      <button class="px-5 py-2 bg-yellow-400 text-white rounded hover:bg-yellow-500 transition font-semibold" onclick="pauseTimer()">Pausar</button>
+      <button class="px-5 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 transition font-semibold" onclick="resetTimer()">Reiniciar</button>
+    </div>
+
+    <div class="mt-4 text-sm text-gray-600">
+      Modo actual: <strong><span id="modo">foco</span></strong> |
+      Ciclos completados: <span id="ciclos">0</span>
+    </div>
+  </div>
+</div>
+
+<!-- Audios -->
+<audio id="clickIniciar" src="{% static 'pomodoro/click-iniciar.mp3' %}"></audio>
+<audio id="clickPausar" src="{% static 'pomodoro/click-pausar.mp3' %}"></audio>
+<audio id="alarmaFin" src="{% static 'pomodoro/pomodoro.mp3' %}"></audio>
+{% endblock %}
+
+{% block extra_script %}
+  <script>
+    const WIND_ID = "{{ wind.id }}";
+  </script>
+
+
+  <!-- Scripts necesarios -->
+  <script>
+    let tiempoInicioReal = null;
+
+
+    let sesionId = null;
+    let pausas = 0;
+
+    async function iniciarSesionBackend() {
+      const tipo = modoActual;
+
+      const resp = await fetch('/pomodoro/iniciar/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+          tipo: tipo,
+          wind_id: WIND_ID,
+          config_id: "{{ wind.pomodoro.id }}"
+        })
+      });
+
+      const data = await resp.json();
+      sesionId = data.id;
+    }
+
+    // ----------- Pomodoro config desde el servidor
+    const configPomodoro = {
+      foco: parseFloat("{{ wind.pomodoro.foco_min }}"),
+      descanso_corto: "{{ wind.pomodoro.nombre }}" === "Mini_Tiempo 1/0.5/1" ? 0.5 : parseFloat("{{ wind.pomodoro.descanso_corto_min }}"),
+      descanso_largo: parseFloat("{{ wind.pomodoro.descanso_largo_min }}"),
+      ciclos: parseInt("{{ wind.pomodoro.ciclos }}")
+    };
+
+    // ----------- Estado actual
+    let tiempo = configPomodoro.foco * 60;
+    let modoActual = 'foco';
+    let ciclosRealizados = 0;
+    let cuenta = null;
+    let pausado = false;
+
+    function updateDisplay() {
+      let minutos = Math.floor(tiempo / 60);
+      let segundos = Math.floor(tiempo % 60);
+      const formato = `${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
+      console.log("Mostrando en pantalla:", formato);
+
+      document.getElementById("timer").innerText = `${String(minutos).padStart(2, '0')}:${String(segundos).padStart(2, '0')}`;
+    }
+
+
+    function cargarTiempo() {
+      console.log("CONFIG POMODORO", configPomodoro);
+
+      if (modoActual === 'foco') tiempo = configPomodoro.foco * 60;
+      else if (modoActual === 'descanso_corto') tiempo = configPomodoro.descanso_corto * 60;
+      else tiempo = configPomodoro.descanso_largo * 60;
+
+      console.log("Modo:", modoActual, "Tiempo (seg):", tiempo);
+
+      document.getElementById("modo").innerText = modoActual;
+      updateDisplay();
+    }
+
+    function startTimer() {
+      if (cuenta) return;  // ✅ quitamos el bloqueo por "pausado"
+
+      tiempoInicioReal = Date.now();
+
+      document.getElementById("clickIniciar").play();
+      pausado = false;
+      iniciarSesionBackend();
+
+      cuenta = setInterval(() => {
+        if (tiempo > 0) {
+          tiempo--;
+          updateDisplay();
+        } else {
+          clearInterval(cuenta);
+          cuenta = null;
+          alarmaFin.play();
+
+          //ciclosRealizados++;
+          //document.getElementById("ciclos").innerText = ciclosRealizados;
+
+          finalizarSesion();
+          avanzarCiclo();
+
+        }
+      }, 1000);
+    }
+
+
+
+    function pauseTimer() {
+      clearInterval(cuenta);
+      cuenta = null;
+      pausado = true;
+      document.getElementById("clickPausar").play();
+
+      const btnIniciar = document.getElementById("btnIniciar");
+      btnIniciar.disabled = true;
+      btnIniciar.classList.remove("bg-emerald-500", "text-white", "hover:bg-emerald-600");
+      btnIniciar.classList.add("bg-gray-200", "text-gray-500", "cursor-not-allowed");
+    }
+
+
+
+    function resetTimer() {
+      clearInterval(cuenta);
+      cuenta = null;  // ✅ importante para poder volver a iniciar
+      modoActual = 'foco';
+      ciclosRealizados = 0;
+      pausado = false;
+      document.getElementById("ciclos").innerText = ciclosRealizados;
+      tiempoInicioReal = null;
+
+
+      cargarTiempo();
+
+      // ✅ Reactivar botón Iniciar visualmente
+      const btnIniciar = document.getElementById("btnIniciar");
+      btnIniciar.disabled = false;
+      btnIniciar.classList.remove("bg-gray-200", "text-gray-500", "cursor-not-allowed");
+      btnIniciar.classList.add("bg-emerald-500", "hover:bg-emerald-600", "text-white");
+
+    }
+
+
+    function avanzarCiclo() {
+      if (modoActual === 'foco') {
+        ciclosRealizados++;
+        document.getElementById("ciclos").innerText = ciclosRealizados;
+
+        // ✅ Fin de todos los ciclos
+        if (ciclosRealizados >= configPomodoro.ciclos) {
+          mostrarMensajeFinal();
+          return;
+        }
+
+        modoActual = (ciclosRealizados % configPomodoro.ciclos === 0)
+          ? 'descanso_largo'
+          : 'descanso_corto';
+      } else {
+        modoActual = 'foco';
+      }
+
+      cargarTiempo();
+      tiempoInicioReal = Date.now();
+      iniciarSesionBackend();
+
+      cuenta = setInterval(() => {
+        if (tiempo > 0) {
+          tiempo--;
+          updateDisplay();
+        } else {
+          clearInterval(cuenta);
+          cuenta = null;
+          alarmaFin.play();
+
+          finalizarSesion();
+          avanzarCiclo();
+        }
+      }, 1000);
+    }
+
+
+
+
+    async function finalizarSesion() {
+      if (!sesionId) return;
+      document.getElementById("alarmaFin").play();
+
+      // Si el Pomodoro era menor a 1 minuto y se completó entero, ponemos 0.5 como mínimo
+      let duracionCalculada = ((configPomodoro[modoActual] * 60 - tiempo) / 60);
+      if (duracionCalculada < 1 && tiempo === 0) {
+        duracionCalculada = 0.5;
+      } else {
+        duracionCalculada = duracionCalculada.toFixed(1);
+      }
+
+      await fetch('/pomodoro/finalizar/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+          id: sesionId,
+          pausas: pausas,
+          duracion: duracionCalculada
+        })
+      });
+    }
+
+
+
+    window.onload = cargarTiempo;
+  </script>
+
+  <!-- AJAX para actualizar tareas -->
+  <script>
+    function actualizarTarea(checkbox) {
+      const tareaId = checkbox.dataset.tareaId;
+      const estado = checkbox.checked;
+
+      fetch("{% url 'actualizar_estado_tarea' %}", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "X-CSRFToken": getCookie("csrftoken")
+        },
+        body: `tarea_id=${tareaId}&completada=${estado}`
+      })
+      .then(res => res.json())
+      .then(data => {
+        const badge = document.getElementById(`estado-tarea-${tareaId}`);
+        badge.className = estado
+          ? 'text-xs px-2 py-1 rounded bg-emerald-100 text-emerald-600'
+          : 'text-xs px-2 py-1 rounded bg-gray-200 text-gray-600';
+
+        badge.innerText = estado ? 'Completa' : 'Pendiente';
+      });
+    }
+
+    function getCookie(name) {
+      let cookieValue = null;
+      if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let cookie of cookies) {
+          const trimmed = cookie.trim();
+          if (trimmed.startsWith(name + '=')) {
+            cookieValue = decodeURIComponent(trimmed.slice(name.length + 1));
+            break;
+          }
+        }
+      }
+      return cookieValue;
+    }
+
+    function mostrarMensajeFinal() {
+      // Oculta el temporizador y botones
+      document.getElementById("timer").classList.add("d-none");
+      document.querySelector(".pomodoro-buttons").classList.add("d-none");
+
+      // Muestra el mensaje de éxito
+      document.getElementById("mensaje-fin").classList.remove("d-none");
+    }
+
+  </script>
+{% endblock %}

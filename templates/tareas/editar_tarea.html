@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Editar Tarea - WindFlow{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto px-6 py-10 animate-fadeIn">
+
+  <h3 class="text-2xl font-bold text-color1 mb-6">✏️ Editar Tarea</h3>
+
+  <form method="post" class="bg-white shadow-md rounded-xl p-6 border-l-4 border-color2 space-y-5">
+    {% csrf_token %}
+
+    <!-- Título -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Título</label>
+      <input type="text" name="titulo" value="{{ tarea.titulo }}" required
+             class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-color2 break-words">
+    </div>
+
+    <!-- Descripción -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Descripción</label>
+      <textarea name="descripcion" rows="4"
+                class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-color2 whitespace-pre-line break-words">{{ tarea.descripcion }}</textarea>
+    </div>
+
+    <!-- Fecha límite -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Fecha límite</label>
+      <input type="date" name="fecha_limite" value="{{ tarea.fecha_limite|date:'Y-m-d' }}"
+             class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-color2">
+    </div>
+
+    <!-- Estado -->
+    <div>
+      <label class="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+      <select name="estado"
+              class="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-color2">
+        {% for valor, nombre in tarea.ESTADO_CHOICES %}
+          <option value="{{ valor }}" {% if valor == tarea.estado %}selected{% endif %}>{{ nombre }}</option>
+        {% endfor %}
+      </select>
+    </div>
+
+    <!-- Botones -->
+    <div class="flex justify-end gap-3 pt-4">
+      <button type="submit" class="px-5 py-2 bg-color2 text-white rounded hover:bg-color3 transition font-medium">
+        Guardar cambios
+      </button>
+      <a href="{% url 'user_tareas' %}" class="px-5 py-2 border border-gray-400 text-gray-700 rounded hover:bg-gray-100 transition font-medium">
+        Cancelar
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}

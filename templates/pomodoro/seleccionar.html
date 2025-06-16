@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Seleccionar Pomodoro - WindFlow{% endblock %}
+
+{% block extra_head %}
+<style>
+  html, body {
+    height: 100%;
+    margin: 0;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+  }
+
+  main {
+    flex: 1;
+  }
+
+  footer {
+    background-color: #2E5077; /* color1 */
+    color: white;
+    text-align: center;
+    padding: 1.5rem 1rem;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+  }
+</style>
+
+{% endblock %}
+
+{% block content %}
+<div class="max-w-6xl mx-auto px-6 py-10 animate-fadeIn">
+
+  <!-- Título -->
+  <h2 class="text-3xl font-bold text-center text-color1 mb-10">🧠 Elegir configuración Pomodoro</h2>
+
+  <!-- Tarjetas -->
+  <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+    {% for conf in configuraciones %}
+      <div class="bg-white shadow-md rounded-xl p-6 border border-gray-100 text-center hover:shadow-lg transition-all duration-300">
+        <h5 class="text-xl font-semibold text-color2 mb-4">{{ conf.nombre }}</h5>
+        <p class="text-gray-700 text-sm leading-relaxed mb-4">
+          🕒 <strong>Foco:</strong> {{ conf.foco_min }} min<br>
+          💤 <strong>Desc. corto:</strong> {{ conf.descanso_corto_min }} min<br>
+          😴 <strong>Desc. largo:</strong> {{ conf.descanso_largo_min }} min<br>
+          🔁 <strong>Ciclos:</strong> {{ conf.ciclos }}
+        </p>
+        <a href="{% url 'user_pomodoro' %}?config={{ conf.id }}"
+           class="inline-block mt-2 px-6 py-2 bg-color2 text-white rounded hover:bg-color3 transition font-medium">
+          Usar esta
+        </a>
+      </div>
+    {% endfor %}
+  </div>
+</div>
+{% endblock %}

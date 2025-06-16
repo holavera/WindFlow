@@ -1,0 +1,236 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}📊 Estadísticas del grupo{% endblock %}
+
+{% block extra_head %}
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    /* NAV y FOOTER en negro puro */
+    nav, footer {
+      background-color: #0f0f0f !important;
+      border-bottom: 1px solid #333;
+      color: #e0e0e0;
+    }
+
+    nav a:hover {
+      color: #c0c0c0 !important;
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-6 py-10 animate-fadeIn">
+  <a href="{% url 'detalle_grupo' grupo.id %}" class="inline-block mb-4 text-color2 hover:underline">
+    ← Volver
+  </a>
+
+  <h2 class="text-3xl font-bold text-color1 mb-6">
+    📈 Estadísticas del grupo <span class="text-color2">{{ grupo.nombre }}</span>
+  </h2>
+
+  <div class="flex flex-wrap gap-3 items-center mb-6">
+    <button id="cambiarTipo" class="btn btn-outline btn-sm border-color2 text-color2 hover:bg-color2 hover:text-white transition">
+      🔄 Cambiar tipo de gráfico
+    </button>
+    <!--
+    <div class="flex gap-2">
+      <a href="?rango=hoy" class="btn btn-sm {% if request.GET.rango == 'hoy' %}bg-color2 text-white{% else %}border border-color2 text-color2{% endif %} rounded">
+        📅 Hoy
+      </a>
+      <a href="?rango=semana" class="btn btn-sm {% if request.GET.rango == 'semana' %}bg-color2 text-white{% else %}border border-color2 text-color2{% endif %} rounded">
+        🗓️ Esta semana
+      </a>
+      <a href="?" class="btn btn-sm {% if not request.GET.rango %}bg-color2 text-white{% else %}border border-color2 text-color2{% endif %} rounded">
+        📊 Todo
+      </a>
+    </div>
+    -->
+  </div>
+
+  <!--
+  <p class="text-sm text-gray-500 mb-6">
+    {% if request.GET.rango == 'hoy' %}
+      Mostrando estadísticas de <strong>hoy</strong>.
+    {% elif request.GET.rango == 'semana' %}
+      Mostrando estadísticas de <strong>esta semana</strong>.
+    {% else %}
+      Mostrando <strong>todo el historial</strong>.
+    {% endif %}
+  </p>
+  -->
+
+  {% if not labels %}
+    <div class="bg-yellow-100 text-yellow-800 p-4 rounded mb-6">⚠️ No hay datos en el rango de fechas seleccionado.</div>
+  {% endif %}
+
+  <canvas id="graficoPomodoros" class="mb-10"></canvas>
+
+  {% if estadisticas %}
+    <div class="overflow-auto shadow rounded-lg">
+      <table class="min-w-full divide-y divide-gray-200 text-sm text-left bg-white">
+        <thead class="bg-color1 text-white">
+          <tr>
+            <th class="px-4 py-2">Usuario</th>
+            <th class="px-4 py-2">Email</th>
+            <th class="px-4 py-2">Winds</th>
+            <th class="px-4 py-2">Prom. elementos/Wind</th>
+            <th class="px-4 py-2">Focus</th>
+            <th class="px-4 py-2">Pomodoros</th>
+            <th class="px-4 py-2">Completados (%)</th>
+            <th class="px-4 py-2">Min. totales</th>
+            <th class="px-4 py-2">Sesión más larga</th>
+            <th class="px-4 py-2">Historial</th>
+            <th class="px-4 py-2">Config. más usada</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          {% for est in estadisticas %}
+            <tr class="hover:bg-gray-50">
+              <td class="px-4 py-2">
+                <span class="bg-gray-800 text-white px-2 py-1 rounded text-xs">{{ est.usuario }}</span>
+              </td>
+              <td class="px-4 py-2 text-gray-600">{{ est.email }}</td>
+              <td class="px-4 py-2">{{ est.num_winds }}</td>
+              <td class="px-4 py-2">{{ est.promedio_elementos }}</td>
+              <td class="px-4 py-2">{{ est.winds_focus }}</td>
+              <td class="px-4 py-2">{{ est.pomodoros }}</td>
+              <td class="px-4 py-2">{{ est.porcentaje_completadas }}%</td>
+              <td class="px-4 py-2">{{ est.minutos }} min</td>
+              <td class="px-4 py-2">{{ est.mas_larga }} min</td>
+              <td class="px-4 py-2">
+                <a href="{% url 'historial_usuario_admin' grupo.id est.perfil_id %}" class="text-color2 hover:underline text-sm">
+                  📜 Ver
+                </a>
+              </td>
+              <td class="px-4 py-2">
+                <span class="bg-color2 text-white px-2 py-1 rounded text-xs">{{ est.config }}</span>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <div class="bg-blue-100 text-blue-800 p-4 rounded mt-6">ℹ️ Este grupo aún no tiene estadísticas disponibles.</div>
+  {% endif %}
+
+  <div class="mt-10">
+    <a href="{% url 'exportar_estadisticas_pdf' grupo.id %}" class="inline-block px-4 py-2 border border-red-500 text-red-500 hover:bg-red-500 hover:text-white rounded transition">
+      📥 Exportar PDF
+    </a>
+  </div>
+</div>
+{% endblock %}
+
+
+{% block extra_script %}
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script id="datos-pomodoros" type="application/json">
+    {
+      "labels": {{ labels|safe }},
+      "valores": {{ valores|safe }}
+    }
+  </script>
+
+  <script>
+    const raw = document.getElementById("datos-pomodoros").textContent;
+    const json = JSON.parse(raw);
+    let tipoGrafico = 'bar';
+
+    const datos = {
+      labels: json.labels,
+      datasets: [{
+        label: 'Winds por usuario',
+        data: json.valores,
+        backgroundColor: [
+          '#0d6efd', '#6610f2', '#6f42c1', '#d63384', '#dc3545',
+          '#fd7e14', '#ffc107', '#198754', '#20c997', '#0dcaf0'
+        ]
+      }]
+    };
+
+    const opciones = {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: tipoGrafico !== 'bar',
+          position: 'bottom'
+        },
+        title: {
+          display: true,
+          text: 'Winds por usuario'
+        }
+      },
+      scales: tipoGrafico === 'bar' ? {
+        y: {
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Winds'
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: 'Usuarios'
+          }
+        }
+      } : {}
+    };
+
+    const ctx = document.getElementById('graficoPomodoros').getContext('2d');
+    let grafico = new Chart(ctx, {
+      type: tipoGrafico,
+      data: datos,
+      options: opciones
+    });
+
+    document.getElementById('cambiarTipo').addEventListener('click', () => {
+      // Elimina el gráfico actual
+      grafico.destroy();
+
+      // Alterna tipo
+      tipoGrafico = tipoGrafico === 'bar' ? 'pie' : 'bar';
+
+      // Actualiza visibilidad de leyenda y escalas
+      const nuevasOpciones = {
+        ...opciones,
+        plugins: {
+          ...opciones.plugins,
+          legend: {
+            display: tipoGrafico !== 'bar',
+            position: 'bottom'
+          }
+        },
+        scales: tipoGrafico === 'bar' ? {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Pomodoros'
+            }
+          },
+          x: {
+            title: {
+              display: true,
+              text: 'Usuarios'
+            }
+          }
+        } : {}
+      };
+
+      // Crea el nuevo gráfico
+      grafico = new Chart(ctx, {
+        type: tipoGrafico,
+        data: datos,
+        options: nuevasOpciones
+      });
+    });
+  </script>
+{% endblock %}
+
+</body>
+</html>

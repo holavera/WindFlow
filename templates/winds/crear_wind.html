@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Crear Wind - WindFlow{% endblock %}
+
+{% block extra_head %}
+  <style>
+    input, select, textarea {
+      border: 2px solid #CBD5E0; /* gris claro */
+      border-radius: 0.5rem;
+      margin-bottom: 1rem;
+      background-color: #F9FAFB; /* fondo suave */
+      transition: all 0.3s ease;
+    }
+
+    input::placeholder, textarea::placeholder {
+      color: #A0AEC0; /* gris placeholder */
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto px-6 py-10 animate-fadeIn">
+
+  <h2 class="text-2xl font-bold text-color1 mb-6">🌪️ Crear Wind</h2>
+
+  <form method="post" class="bg-white shadow-md rounded-xl p-6 border-l-4 border-color2 space-y-5">
+    {% csrf_token %}
+
+    {{ form.as_p }}
+
+    <div class="flex justify-end gap-3 pt-4">
+      <button type="submit" class="px-5 py-2 bg-color2 text-white rounded hover:bg-color3 transition font-medium">
+        Guardar Wind
+      </button>
+      <a href="{% url 'user_winds' %}" class="px-5 py-2 border border-gray-400 text-gray-700 rounded hover:bg-gray-100 transition font-medium">
+        Cancelar
+      </a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_script %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const select = document.getElementById("id_pomodoro");
+    if (select) {
+      const emptyOption = select.querySelector('option[value=""]');
+      if (emptyOption) emptyOption.disabled = true;
+    }
+  });
+</script>
+{% endblock %}
