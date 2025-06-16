@@ -36,7 +36,7 @@ SECRET_KEY = 'django-insecure--py@zb$wt*c@7mj^h^el&ta(!7x^7=mai0-(-7^^)+7k$4q$_2
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['windflow-9b9m.onrender.com', 'localhost', '127.0.0.1']
 
 
 # Application definition
